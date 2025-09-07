@@ -1,33 +1,33 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\HP\\source\\repos\\Ppt\\",
+  "WorkspaceRootPath": "C:\\Users\\HP\\source\\repos\\Powerpoint\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|C:\\Users\\HP\\source\\repos\\Ppt\\pivot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
-      "RelativeMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|solutionrelative:pivot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|c:\\users\\hp\\source\\repos\\ppt\\ribbon1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|C:\\Users\\HP\\source\\repos\\Powerpoint\\ribbon1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|solutionrelative:ribbon1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|C:\\Users\\HP\\source\\repos\\Ppt\\pivot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|C:\\Users\\HP\\source\\repos\\Powerpoint\\pivot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|solutionrelative:pivot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|C:\\Users\\HP\\source\\repos\\Ppt\\ribbon1.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|c:\\users\\hp\\source\\repos\\powerpoint\\pivot.resx||{81828910-B8B3-4D2B-99A3-067027C180C1}",
+      "RelativeMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|solutionrelative:pivot.resx||{81828910-B8B3-4D2B-99A3-067027C180C1}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|c:\\users\\hp\\source\\repos\\powerpoint\\pivot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|solutionrelative:pivot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|C:\\Users\\HP\\source\\repos\\Powerpoint\\ribbon1.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|solutionrelative:ribbon1.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|C:\\Users\\HP\\source\\repos\\Ppt\\datasetmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|C:\\Users\\HP\\source\\repos\\Powerpoint\\datasetmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|solutionrelative:datasetmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|c:\\users\\hp\\source\\repos\\ppt\\pivot.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|solutionrelative:pivot.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|C:\\Users\\HP\\source\\repos\\Ppt\\ribbon1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "AbsoluteMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|C:\\Users\\HP\\source\\repos\\Powerpoint\\ribbon1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
       "RelativeMoniker": "D:0:0:{AE61B73D-10FB-41B0-A6BB-2B2A051C2DD6}|PptExcelSync.csproj|solutionrelative:ribbon1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     }
   ],
@@ -38,28 +38,27 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 4,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "Pivot.Designer.cs",
-              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\Ppt\\Pivot.Designer.cs",
-              "RelativeDocumentMoniker": "Pivot.Designer.cs",
-              "ToolTip": "C:\\Users\\HP\\source\\repos\\Ppt\\Pivot.Designer.cs",
-              "RelativeToolTip": "Pivot.Designer.cs",
-              "ViewState": "AgIAAGEAAAAAzMzMzMwawHcAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-09-04T23:29:52.443Z",
+              "DocumentIndex": 2,
+              "Title": "Pivot.resx",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\Powerpoint\\Pivot.resx",
+              "RelativeDocumentMoniker": "Pivot.resx",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\Powerpoint\\Pivot.resx",
+              "RelativeToolTip": "Pivot.resx",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001005|",
+              "WhenOpened": "2025-09-07T18:00:26.035Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 3,
               "Title": "Pivot.cs [Design]",
-              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\Ppt\\Pivot.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\Powerpoint\\Pivot.cs",
               "RelativeDocumentMoniker": "Pivot.cs",
-              "ToolTip": "C:\\Users\\HP\\source\\repos\\Ppt\\Pivot.cs [Design]",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\Powerpoint\\Pivot.cs [Design]",
               "RelativeToolTip": "Pivot.cs [Design]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-09-04T20:36:31.133Z",
@@ -67,24 +66,24 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 1,
               "Title": "Pivot.cs",
-              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\Ppt\\Pivot.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\Powerpoint\\Pivot.cs",
               "RelativeDocumentMoniker": "Pivot.cs",
-              "ToolTip": "C:\\Users\\HP\\source\\repos\\Ppt\\Pivot.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\Powerpoint\\Pivot.cs",
               "RelativeToolTip": "Pivot.cs",
-              "ViewState": "AgIAAEcAAAAA/v////8bwFcAAAAIAAAAAAAAAA==",
+              "ViewState": "AgIAAFQAAABgZmZmZmYwwGMAAAA2AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-09-04T18:26:54.324Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "DatasetManager.cs",
-              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\Ppt\\DatasetManager.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\Powerpoint\\DatasetManager.cs",
               "RelativeDocumentMoniker": "DatasetManager.cs",
-              "ToolTip": "C:\\Users\\HP\\source\\repos\\Ppt\\DatasetManager.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\Powerpoint\\DatasetManager.cs",
               "RelativeToolTip": "DatasetManager.cs",
               "ViewState": "AgIAAAUAAAAAAAAAAAAcwA8AAAAQAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
@@ -93,13 +92,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "Ribbon1.cs",
-              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\Ppt\\Ribbon1.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\Powerpoint\\Ribbon1.cs",
               "RelativeDocumentMoniker": "Ribbon1.cs",
-              "ToolTip": "C:\\Users\\HP\\source\\repos\\Ppt\\Ribbon1.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\Powerpoint\\Ribbon1.cs",
               "RelativeToolTip": "Ribbon1.cs",
-              "ViewState": "AgIAADwCAACAmZmZmZkJwFACAAABAAAAAAAAAA==",
+              "ViewState": "AgIAAF0BAABAMzMzMzMnwGkBAAAvAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-09-04T15:44:16.683Z",
               "EditorCaption": ""
@@ -108,9 +107,9 @@
               "$type": "Document",
               "DocumentIndex": 6,
               "Title": "Ribbon1.cs [Design]",
-              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\Ppt\\Ribbon1.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\Powerpoint\\Ribbon1.cs",
               "RelativeDocumentMoniker": "Ribbon1.cs",
-              "ToolTip": "C:\\Users\\HP\\source\\repos\\Ppt\\Ribbon1.cs [Design]",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\Powerpoint\\Ribbon1.cs [Design]",
               "RelativeToolTip": "Ribbon1.cs [Design]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-09-04T15:39:54.939Z",
@@ -118,11 +117,11 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "Ribbon1.Designer.cs",
-              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\Ppt\\Ribbon1.Designer.cs",
+              "DocumentMoniker": "C:\\Users\\HP\\source\\repos\\Powerpoint\\Ribbon1.Designer.cs",
               "RelativeDocumentMoniker": "Ribbon1.Designer.cs",
-              "ToolTip": "C:\\Users\\HP\\source\\repos\\Ppt\\Ribbon1.Designer.cs",
+              "ToolTip": "C:\\Users\\HP\\source\\repos\\Powerpoint\\Ribbon1.Designer.cs",
               "RelativeToolTip": "Ribbon1.Designer.cs",
               "ViewState": "AgIAAJQAAACAzMzMzMwUwAgAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
