@@ -1,8 +1,4 @@
-﻿using DocumentFormat.OpenXml.Drawing.Charts;
-using Google.Cloud.Storage.V1;
-using LiveCharts;
-using LiveCharts.Wpf;
-using Microsoft.Office.Tools.Ribbon;
+﻿using Microsoft.Office.Tools.Ribbon;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -10,12 +6,14 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
-using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 using DataTable = System.Data.DataTable;
 using MessageBox = System.Windows.Forms.MessageBox;
 using Series = System.Windows.Forms.DataVisualization.Charting.Series;
+using PowerPoint = Microsoft.Office.Interop.PowerPoint;
+using Office = Microsoft.Office.Core;
+using System.Web;
 
 namespace PptExcelSync
 {
@@ -334,7 +332,6 @@ namespace PptExcelSync
                     InsertTableFromDataset(filePath, selectedChartType);
             }
         }
-
         private void btnPivotView_Click(object sender, RibbonControlEventArgs e)
         {
             // Ask user to pick dataset
@@ -351,48 +348,246 @@ namespace PptExcelSync
             var form = new Pivot(dt);
             if (form.ShowDialog() == DialogResult.OK)
             {
-                var pivot = CreatePivot(dt, form.SelectedRowField, form.SelectedValueField, form.SelectedAggregation);
+                var pivot = CreatePivot(dt, form.SelectedRowField, form.SelectedValueFields, form.SelectedAggregations);
 
                 // Insert pivot into PowerPoint
-               // InsertTableIntoPowerPoint(pivot);
+                string chartType =  form.SelectedChartType.ToString();
+
+                if(chartType != "0")
+                  InsertPivotChartIntoPowerPoint(pivot, form.SelectedChartType);
+                else
+                  InsertTableIntoPowerPoint(pivot, 25);
             }
         }
 
-        public DataTable CreatePivot(DataTable dt, string rowField, string valueField, string aggFunc)
+        public DataTable CreatePivot(DataTable dt, string rowField, List<string> valueFields, List<string> aggFuncs)
         {
-            var query = dt.AsEnumerable()
-                .GroupBy(r => r[rowField].ToString())
-                .Select(g =>
-                {
-                    double result = 0;
-                    switch (aggFunc.ToLower())
-                    {
-                        case "sum":
-                            result = g.Sum(r => double.TryParse(r[valueField].ToString(), out var v) ? v : 0);
-                            break;
-                        case "average":
-                            var nums = g.Select(r => double.TryParse(r[valueField].ToString(), out var v) ? v : 0);
-                            result = nums.Any() ? nums.Average() : 0;
-                            break;
-                        case "count":
-                            result = g.Count();
-                            break;
-                    }
-                    return new { Key = g.Key, Value = result };
-                });
+            var grouped = dt.AsEnumerable().GroupBy(r => r[rowField].ToString());
 
             DataTable pivot = new DataTable();
-            pivot.Columns.Add(rowField);
-            pivot.Columns.Add($"{aggFunc} of {valueField}", typeof(double));
+            pivot.Columns.Add(rowField, typeof(string));
 
-            foreach (var item in query)
+            // Add output columns for each (aggregation + value field) combination
+            foreach (var valField in valueFields)
             {
-                pivot.Rows.Add(item.Key, item.Value);
+                foreach (var agg in aggFuncs)
+                {
+                    pivot.Columns.Add($"{agg} of {valField}", typeof(double));
+                }
+            }
+
+            foreach (var g in grouped)
+            {
+                var row = pivot.NewRow();
+                row[rowField] = g.Key;
+
+                foreach (var valField in valueFields)
+                {
+                    var numbers = g.Select(r =>
+                    {
+                        double val;
+                        return double.TryParse(r[valField].ToString(), out val) ? val : 0;
+                    });
+
+                    foreach (var agg in aggFuncs)
+                    {
+                        double result = 0;
+                        switch (agg.ToLower())
+                        {
+                            case "sum": result = numbers.Sum(); break;
+                            case "average": result = numbers.Any() ? numbers.Average() : 0; break;
+                            case "count": result = g.Count(); break;
+                            case "max": result = numbers.Any() ? numbers.Max() : 0; break;
+                            case "min": result = numbers.Any() ? numbers.Min() : 0; break;
+                        }
+
+                        row[$"{agg} of {valField}"] = result;
+                    }
+                }
+
+                pivot.Rows.Add(row);
             }
 
             return pivot;
         }
 
+        /// <summary>
+        /// Insert a DataTable into PowerPoint slides as a table. Splits into multiple slides if too many rows.
+        /// </summary>
+        public void InsertTableIntoPowerPoint(DataTable dt, int maxDataRowsPerSlide = 20)
+        {
+            if (dt == null || dt.Columns.Count == 0)
+            {
+                MessageBox.Show("No data to insert.");
+                return;
+            }
 
+            try
+            {
+                var app = Globals.ThisAddIn.Application;
+
+                // Ensure we have a presentation
+                PowerPoint.Presentation pres = null;
+                if (app.Presentations.Count == 0)
+                    pres = app.Presentations.Add(Office.MsoTriState.msoTrue);
+                else
+                    pres = app.ActivePresentation;
+
+                int totalRows = dt.Rows.Count;
+                int cols = dt.Columns.Count;
+                int processedRows = 0;
+
+                // Slide dimensions
+                float slideW = (float)pres.PageSetup.SlideWidth;
+                float slideH = (float)pres.PageSetup.SlideHeight;
+                float marginLeft = 40f;
+                float marginTop = 60f;
+                float tableWidth = slideW - marginLeft * 2;
+                float tableHeight = slideH - marginTop * 2 - 20f; // leave some bottom margin
+
+                while (processedRows < totalRows || (totalRows == 0 && processedRows == 0))
+                {
+                    int rowsThisSlice = Math.Min(maxDataRowsPerSlide, totalRows - processedRows);
+                    // If no data rows (empty dt) still create header-only table once
+                    int tableRows = Math.Max(1, rowsThisSlice) + 1; // +1 for header
+
+                    // Create a new blank slide
+                    var slide = pres.Slides.Add(pres.Slides.Count + 1, PowerPoint.PpSlideLayout.ppLayoutBlank);
+
+                    // Safety: remove placeholders if any
+                    foreach (PowerPoint.Shape shp in slide.Shapes)
+                    {
+                        if (shp.Type == Office.MsoShapeType.msoPlaceholder)
+                            shp.Delete();
+                    }
+
+                    // Add PPT table
+                    var shape = slide.Shapes.AddTable(tableRows, cols, marginLeft, marginTop, tableWidth, tableHeight);
+                    var table = shape.Table;
+
+                    // Set approximate column widths
+                    float colWidth = tableWidth / cols;
+                    try
+                    {
+                        for (int c = 1; c <= cols; c++)
+                        {
+                            table.Columns[c].Width = colWidth;
+                        }
+                    }
+                    catch
+                    {
+                        // Some PowerPoint versions might not allow setting width this way; ignore if it fails.
+                    }
+
+                    // Header row formatting
+                    for (int c = 0; c < cols; c++)
+                    {
+                        var cell = table.Cell(1, c + 1); // first row is header
+
+                        // Set header text
+                        cell.Shape.TextFrame.TextRange.Text = dt.Columns[c].ColumnName;
+                        cell.Shape.TextFrame.TextRange.Font.Bold = Office.MsoTriState.msoTrue;
+                        cell.Shape.TextFrame.TextRange.Font.Size = 12;
+
+                        // Header background color
+                        cell.Shape.Fill.Visible = Office.MsoTriState.msoTrue;
+                        cell.Shape.Fill.BackColor.RGB = ColorTranslator.ToOle(Color.SteelBlue);
+
+                        // Header text color (white)
+                        cell.Shape.TextFrame.TextRange.Font.Color.RGB = ColorTranslator.ToOle(Color.White);
+
+                        // Center align header text
+                        cell.Shape.TextFrame.VerticalAnchor = Office.MsoVerticalAnchor.msoAnchorMiddle;
+                        cell.Shape.TextFrame.TextRange.ParagraphFormat.Alignment =
+                            PowerPoint.PpParagraphAlignment.ppAlignCenter;
+                    }
+
+
+                    // Fill data rows
+                    for (int r = 0; r < rowsThisSlice; r++)
+                    {
+                        int dataRowIndex = processedRows + r;
+                        for (int c = 0; c < cols; c++)
+                        {
+                            object val = dt.Rows[dataRowIndex][c];
+                            string text = val?.ToString() ?? string.Empty;
+
+                            var cell = table.Cell(r + 2, c + 1);
+                            cell.Shape.TextFrame.TextRange.Text = text;
+                            cell.Shape.TextFrame.TextRange.Font.Size = 10;
+                            // left-align non-numeric, right-align numeric
+                            double dummy;
+                            if (double.TryParse(text, out dummy))
+                                cell.Shape.TextFrame.TextRange.ParagraphFormat.Alignment = PowerPoint.PpParagraphAlignment.ppAlignRight;
+                            else
+                                cell.Shape.TextFrame.TextRange.ParagraphFormat.Alignment = PowerPoint.PpParagraphAlignment.ppAlignLeft;
+                        }
+                    }
+
+                    // Move to next slice
+                    processedRows += rowsThisSlice;
+                    if (totalRows == 0) break; // handled empty table case
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error inserting table into PowerPoint: {ex.Message}");
+            }
+        }
+
+        public void InsertPivotChartIntoPowerPoint(DataTable pivotTable, Office.XlChartType chartType)
+        {
+            try
+            {
+                var app = Globals.ThisAddIn.Application;
+                var pres = app.Presentations.Count > 0
+                    ? app.ActivePresentation
+                    : app.Presentations.Add(Office.MsoTriState.msoTrue);
+
+                var slide = pres.Slides.Add(pres.Slides.Count + 1, PowerPoint.PpSlideLayout.ppLayoutBlank);
+
+                var chartShape = slide.Shapes.AddChart(chartType, 50, 50, 600, 350);
+                var chart = chartShape.Chart;
+
+                var workbook = chart.ChartData.Workbook;
+                var sheet = workbook.Worksheets[1];
+                sheet.Cells.Clear();
+
+                int rows = pivotTable.Rows.Count;
+                int cols = pivotTable.Columns.Count;
+
+                // Write headers
+                for (int c = 0; c < cols; c++)
+                    sheet.Cells[1, c + 1] = pivotTable.Columns[c].ColumnName;
+
+                // Write data
+                for (int r = 0; r < rows; r++)
+                    for (int c = 0; c < cols; c++)
+                    {
+                        double val;
+                        if (double.TryParse(pivotTable.Rows[r][c].ToString(), out val))
+                            sheet.Cells[r + 2, c + 1] = val;
+                        else
+                            sheet.Cells[r + 2, c + 1] = pivotTable.Rows[r][c]?.ToString() ?? "";
+                    }
+
+                // Refresh chart
+                chart.ChartData.Activate();
+                chart.ChartData.Workbook.Application.CalculateFull();
+                chart.Refresh();
+
+                chart.HasLegend = true;
+
+                // Enable title safely
+                if (!chart.HasTitle)
+                    chart.HasTitle = true;
+
+                chart.ChartTitle.Text = "Pivot Chart";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error inserting chart: {ex.Message}");
+            }
+        }
     }
 }

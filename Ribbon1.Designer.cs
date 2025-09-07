@@ -40,14 +40,14 @@
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl4 = this.Factory.CreateRibbonDropDownItem();
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl5 = this.Factory.CreateRibbonDropDownItem();
             this.group1 = this.Factory.CreateRibbonGroup();
-            this.tab1 = this.Factory.CreateRibbonTab();
-            this.btnInsertChart_Click = this.Factory.CreateRibbonButton();
-            this.btnInsertTable_Click = this.Factory.CreateRibbonButton();
-            this.ddlChartType = this.Factory.CreateRibbonDropDown();
-            this.btnCreateChart_Click = this.Factory.CreateRibbonButton();
             this.btnUploadExcel = this.Factory.CreateRibbonButton();
             this.ddlDatasets = this.Factory.CreateRibbonDropDown();
+            this.ddlChartType = this.Factory.CreateRibbonDropDown();
             this.btnPivotView = this.Factory.CreateRibbonButton();
+            this.btnInsertChart_Click = this.Factory.CreateRibbonButton();
+            this.btnInsertTable_Click = this.Factory.CreateRibbonButton();
+            this.btnCreateChart_Click = this.Factory.CreateRibbonButton();
+            this.tab1 = this.Factory.CreateRibbonTab();
             this.group1.SuspendLayout();
             this.tab1.SuspendLayout();
             this.SuspendLayout();
@@ -62,47 +62,6 @@
             this.group1.Items.Add(this.btnInsertTable_Click);
             this.group1.Items.Add(this.btnCreateChart_Click);
             this.group1.Name = "group1";
-            // 
-            // tab1
-            // 
-            this.tab1.ControlId.ControlIdType = Microsoft.Office.Tools.Ribbon.RibbonControlIdType.Office;
-            this.tab1.Groups.Add(this.group1);
-            this.tab1.Label = "TabAddIns";
-            this.tab1.Name = "tab1";
-            // 
-            // btnInsertChart_Click
-            // 
-            this.btnInsertChart_Click.Label = "Create Chart";
-            this.btnInsertChart_Click.Name = "btnInsertChart_Click";
-            this.btnInsertChart_Click.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnInsertChart_Click_Click);
-            // 
-            // btnInsertTable_Click
-            // 
-            this.btnInsertTable_Click.Label = "Create Table";
-            this.btnInsertTable_Click.Name = "btnInsertTable_Click";
-            this.btnInsertTable_Click.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnInsertTable_Click_Click);
-            // 
-            // ddlChartType
-            // 
-            ribbonDropDownItemImpl1.Label = "Column";
-            ribbonDropDownItemImpl2.Label = "Line";
-            ribbonDropDownItemImpl3.Label = "Pie";
-            ribbonDropDownItemImpl4.Label = "Bar";
-            ribbonDropDownItemImpl5.Label = "Table";
-            this.ddlChartType.Items.Add(ribbonDropDownItemImpl1);
-            this.ddlChartType.Items.Add(ribbonDropDownItemImpl2);
-            this.ddlChartType.Items.Add(ribbonDropDownItemImpl3);
-            this.ddlChartType.Items.Add(ribbonDropDownItemImpl4);
-            this.ddlChartType.Items.Add(ribbonDropDownItemImpl5);
-            this.ddlChartType.Label = "Chart Type";
-            this.ddlChartType.Name = "ddlChartType";
-            this.ddlChartType.SelectionChanged += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.ddlChartType_SelectionChanged);
-            // 
-            // btnCreateChart_Click
-            // 
-            this.btnCreateChart_Click.Label = "Generate Chart";
-            this.btnCreateChart_Click.Name = "btnCreateChart_Click";
-            this.btnCreateChart_Click.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnCreateChart_Click_Click);
             // 
             // btnUploadExcel
             // 
@@ -120,11 +79,52 @@
             this.ddlDatasets.ShowImage = true;
             this.ddlDatasets.SelectionChanged += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.ddlDatasets_SelectionChanged);
             // 
+            // ddlChartType
+            // 
+            ribbonDropDownItemImpl1.Label = "Column";
+            ribbonDropDownItemImpl2.Label = "Line";
+            ribbonDropDownItemImpl3.Label = "Pie";
+            ribbonDropDownItemImpl4.Label = "Bar";
+            ribbonDropDownItemImpl5.Label = "Table";
+            this.ddlChartType.Items.Add(ribbonDropDownItemImpl1);
+            this.ddlChartType.Items.Add(ribbonDropDownItemImpl2);
+            this.ddlChartType.Items.Add(ribbonDropDownItemImpl3);
+            this.ddlChartType.Items.Add(ribbonDropDownItemImpl4);
+            this.ddlChartType.Items.Add(ribbonDropDownItemImpl5);
+            this.ddlChartType.Label = "Chart Type";
+            this.ddlChartType.Name = "ddlChartType";
+            this.ddlChartType.SelectionChanged += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.ddlChartType_SelectionChanged);
+            // 
             // btnPivotView
             // 
             this.btnPivotView.Label = "Pivot View";
             this.btnPivotView.Name = "btnPivotView";
             this.btnPivotView.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnPivotView_Click);
+            // 
+            // btnInsertChart_Click
+            // 
+            this.btnInsertChart_Click.Label = "Create Chart";
+            this.btnInsertChart_Click.Name = "btnInsertChart_Click";
+            this.btnInsertChart_Click.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnInsertChart_Click_Click);
+            // 
+            // btnInsertTable_Click
+            // 
+            this.btnInsertTable_Click.Label = "Create Table";
+            this.btnInsertTable_Click.Name = "btnInsertTable_Click";
+            this.btnInsertTable_Click.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnInsertTable_Click_Click);
+            // 
+            // btnCreateChart_Click
+            // 
+            this.btnCreateChart_Click.Label = "Generate Chart";
+            this.btnCreateChart_Click.Name = "btnCreateChart_Click";
+            this.btnCreateChart_Click.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnCreateChart_Click_Click);
+            // 
+            // tab1
+            // 
+            this.tab1.ControlId.ControlIdType = Microsoft.Office.Tools.Ribbon.RibbonControlIdType.Office;
+            this.tab1.Groups.Add(this.group1);
+            this.tab1.Label = "TabAddIns";
+            this.tab1.Name = "tab1";
             // 
             // Ribbon1
             // 
