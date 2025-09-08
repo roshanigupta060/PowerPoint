@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows.Forms;
 using PowerPoint = Microsoft.Office.Interop.PowerPoint;
 using Office = Microsoft.Office.Core;
+using Excel = Microsoft.Office.Interop.Excel;
 
 namespace PptExcelSync
 {

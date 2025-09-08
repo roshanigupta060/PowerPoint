@@ -13,6 +13,9 @@ using MessageBox = System.Windows.Forms.MessageBox;
 using Series = System.Windows.Forms.DataVisualization.Charting.Series;
 using PowerPoint = Microsoft.Office.Interop.PowerPoint;
 using Office = Microsoft.Office.Core;
+using System.Runtime.InteropServices;
+using Excel = Microsoft.Office.Interop.Excel;
+
 using System.Web;
 
 namespace PptExcelSync
@@ -348,6 +351,12 @@ namespace PptExcelSync
             var form = new Pivot(dt);
             if (form.ShowDialog() == DialogResult.OK)
             {
+                if (form.SelectedValueFields.Count() > 2)
+                {
+                    MessageBox.Show("Please select only two values.");
+                    return;
+                }
+
                 var pivot = CreatePivot(dt, form.SelectedRowField, form.SelectedValueFields, form.SelectedAggregations);
 
                 // Insert pivot into PowerPoint
@@ -534,7 +543,6 @@ namespace PptExcelSync
                 MessageBox.Show($"Error inserting table into PowerPoint: {ex.Message}");
             }
         }
-
         public void InsertPivotChartIntoPowerPoint(DataTable pivotTable, Office.XlChartType chartType)
         {
             try
@@ -544,50 +552,82 @@ namespace PptExcelSync
                     ? app.ActivePresentation
                     : app.Presentations.Add(Office.MsoTriState.msoTrue);
 
-                var slide = pres.Slides.Add(pres.Slides.Count + 1, PowerPoint.PpSlideLayout.ppLayoutBlank);
+                var slide = pres.Slides.Add(
+                    pres.Slides.Count + 1,
+                    PowerPoint.PpSlideLayout.ppLayoutBlank);
 
+                // Create chart
                 var chartShape = slide.Shapes.AddChart(chartType, 50, 50, 600, 350);
                 var chart = chartShape.Chart;
 
-                var workbook = chart.ChartData.Workbook;
-                var sheet = workbook.Worksheets[1];
-                sheet.Cells.Clear();
+                // Get embedded workbook
+                var wb = chart.ChartData.Workbook;
+                var ws = (Excel.Worksheet)wb.Worksheets[1];
+
+                // Clear old cells
+                ws.Cells.Clear();
 
                 int rows = pivotTable.Rows.Count;
                 int cols = pivotTable.Columns.Count;
 
                 // Write headers
                 for (int c = 0; c < cols; c++)
-                    sheet.Cells[1, c + 1] = pivotTable.Columns[c].ColumnName;
+                    ws.Cells[1, c + 1] = pivotTable.Columns[c].ColumnName;
 
                 // Write data
                 for (int r = 0; r < rows; r++)
+                {
                     for (int c = 0; c < cols; c++)
                     {
-                        double val;
-                        if (double.TryParse(pivotTable.Rows[r][c].ToString(), out val))
-                            sheet.Cells[r + 2, c + 1] = val;
+                        var val = pivotTable.Rows[r][c];
+                        if (double.TryParse(val?.ToString(), out double num))
+                            ws.Cells[r + 2, c + 1] = num;
                         else
-                            sheet.Cells[r + 2, c + 1] = pivotTable.Rows[r][c]?.ToString() ?? "";
+                            ws.Cells[r + 2, c + 1] = val?.ToString() ?? "";
                     }
+                }
 
-                // Refresh chart
-                chart.ChartData.Activate();
-                chart.ChartData.Workbook.Application.CalculateFull();
-                chart.Refresh();
+                // ✅ Build category array (first column)
+                Excel.Range categoryRange = ws.Range[ws.Cells[2, 1], ws.Cells[rows + 1, 1]];
+                object[,] categories = categoryRange.Value2 as object[,];
 
+                // ✅ Loop through numeric columns → each as a series
+                for (int c = 2; c <= cols; c++)
+                {
+                    Excel.Range valuesRange = ws.Range[ws.Cells[2, c], ws.Cells[rows + 1, c]];
+                    object[,] values = valuesRange.Value2 as object[,];
+                    string seriesName = pivotTable.Columns[c - 1].ColumnName;
+
+                    if (c - 1 <= chart.SeriesCollection().Count)
+                    {
+                        var series = (PowerPoint.Series)chart.SeriesCollection(c - 1);
+                        series.Name = seriesName;
+                        series.Values = values;
+                        series.XValues = categories;
+                    }
+                    else
+                    {
+                        chart.SeriesCollection().NewSeries();
+                        var series = (PowerPoint.Series)chart.SeriesCollection(chart.SeriesCollection().Count);
+                        series.Name = seriesName;
+                        series.Values = values;
+                        series.XValues = categories;
+                    }
+                }
+
+                // Style
                 chart.HasLegend = true;
-
-                // Enable title safely
-                if (!chart.HasTitle)
-                    chart.HasTitle = true;
-
+                chart.HasTitle = true;
                 chart.ChartTitle.Text = "Pivot Chart";
+
+                // Hide Excel so user doesn’t see embedded sheet
+                wb.Application.Visible = false;
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error inserting chart: {ex.Message}");
             }
         }
+
     }
 }
