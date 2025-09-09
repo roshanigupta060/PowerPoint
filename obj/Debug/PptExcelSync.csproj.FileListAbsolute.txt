@@ -237,3 +237,6 @@ C:\Users\HP\source\repos\Ppt\obj\Debug\PptExcelSync.csproj.CoreCompileInputs.cac
 C:\Users\HP\source\repos\Ppt\obj\Debug\PptExcel.D5888490.Up2Date
 C:\Users\HP\source\repos\Ppt\obj\Debug\PptExcelSync.dll
 C:\Users\HP\source\repos\Ppt\obj\Debug\PptExcelSync.pdb
+C:\Users\HP\source\repos\PowerPoint\bin\Debug\Antlr4.Runtime.Standard.dll
+C:\Users\HP\source\repos\PowerPoint\bin\Debug\NCalc.dll
+C:\Users\HP\source\repos\PowerPoint\bin\Debug\Antlr4.Runtime.Standard.xml
