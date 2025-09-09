@@ -1,16 +1,17 @@
-﻿using System;
+﻿using Microsoft.Office.Interop.Excel;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Windows.Forms;
-using PowerPoint = Microsoft.Office.Interop.PowerPoint;
+using DataTable = System.Data.DataTable;
 using Office = Microsoft.Office.Core;
-using Excel = Microsoft.Office.Interop.Excel;
 
 namespace PptExcelSync
 {
     public partial class Pivot : Form
     {
+        public string FilePath = string.Empty;
         public string SelectedRowField => cmbRowField.SelectedItem?.ToString();
         public string SelectedChartTypeField => cmbChartType.SelectedItem?.ToString();
         public List<string> SelectedValueFields =>
@@ -31,12 +32,65 @@ namespace PptExcelSync
                 }
             }
         }
-        public Pivot(DataTable data)
-        {
-            InitializeComponent();
 
-            PopulateDropdowns(data);
+        DataTable _data;
+        public Pivot(DataTable data, string filePath)
+        {
+            _data = data;
+            FilePath = filePath;
+            InitializeComponent();
+            InitializeValueContextMenu();
+            PopulateDropdowns(_data);
         }
+
+        private void InitializeValueContextMenu()
+        {
+            valueContextMenu = new ContextMenuStrip();
+            var deleteItem = new ToolStripMenuItem("Delete Calculated Field");
+            deleteItem.Click += DeleteCalculatedField_Click;
+            valueContextMenu.Items.Add(deleteItem);
+
+            // Attach menu to Value list
+            clbValueFields.ContextMenuStrip = valueContextMenu; // if ComboBox
+                                                               // OR lstValueField.ContextMenuStrip = valueContextMenu; // if ListBox
+        }
+
+        private void DeleteCalculatedField_Click(object sender, EventArgs e)
+        {
+            if (clbValueFields.SelectedItem == null)
+            {
+                MessageBox.Show("Please select a field to delete.");
+                return;
+            }
+
+            string fieldName = clbValueFields.SelectedItem.ToString();
+
+            // Load metadata
+            var metadata = DatasetMetadata.Load(FilePath);
+
+            // Check if it's a calculated field
+            var calcField = metadata.CalculatedFields
+                .FirstOrDefault(f => f.FieldName.Equals(fieldName, StringComparison.OrdinalIgnoreCase));
+
+            if (calcField == null)
+            {
+                MessageBox.Show("This field is not a calculated field and cannot be deleted.");
+                return;
+            }
+
+            // --- Delete ---
+            metadata.CalculatedFields.Remove(calcField);
+            metadata.Save(FilePath);
+
+            if (_data.Columns.Contains(fieldName))
+                _data.Columns.Remove(fieldName);
+
+            // Refresh dropdowns
+            PopulateDropdowns(_data);
+
+            MessageBox.Show($"Calculated field '{fieldName}' deleted successfully.");
+        }
+
 
         private void PopulateDropdowns(DataTable data)
         {
@@ -100,6 +154,50 @@ namespace PptExcelSync
         private void cmbChartType_SelectedIndexChanged(object sender, EventArgs e)
         {
 
+        }
+
+        private void btnAddField_Click_1(object sender, EventArgs e)
+        {
+            try
+            {
+                string fieldName = txtFieldName.Text.Trim();
+                string formula = txtFormula.Text.Trim();
+                if (string.IsNullOrWhiteSpace(fieldName) || string.IsNullOrWhiteSpace(formula))
+                {
+                    MessageBox.Show("Please enter both field name and formula.");
+                    return;
+                }
+                string filePath = FilePath;
+
+                // Add calculated field
+                var calcHelper = new PivotHelper();
+                calcHelper.AddCalculatedField(_data, fieldName, formula); // _data is your DataTable
+
+                // Save into metadata
+
+                
+                var metadata = DatasetMetadata.Load(filePath);
+
+                // Avoid duplicates
+                if (!metadata.CalculatedFields.Any(f => f.FieldName.Equals(fieldName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    metadata.CalculatedFields.Add(new CalculatedFieldInfo
+                    {
+                        FieldName = fieldName,
+                        Formula = formula
+                    });
+                    metadata.Save(filePath);
+                }
+
+                // Refresh dropdowns so new field appears in Values
+                PopulateDropdowns(_data);
+
+                MessageBox.Show($"Calculated field '{fieldName}' added successfully!");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error adding calculated field: " + ex.Message);
+            }
         }
     }
 }

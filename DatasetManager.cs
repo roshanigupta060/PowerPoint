@@ -1,15 +1,17 @@
-﻿using System;
+﻿using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Spreadsheet;
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Data;
 using System.IO;
-using ClosedXML.Excel;
+using System.Linq;
 
 
 namespace PptExcelSync
 {
     public class DatasetManager
     {
+        public string FileName { get; set; }
         public DataTable LoadExcel(string filePath)
         {
             if (!File.Exists(filePath))
@@ -36,6 +38,14 @@ namespace PptExcelSync
                 }
             }
 
+            // 🔹 STEP 2: Load metadata & apply calculated fields
+            var metadata = DatasetMetadata.Load(filePath);
+
+            var calcHelper = new PivotHelper();
+            foreach (var field in metadata.CalculatedFields)
+            {
+                calcHelper.AddCalculatedField(dt, field.FieldName, field.Formula);
+            }
             return dt;
         }
     }
