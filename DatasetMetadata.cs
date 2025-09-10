@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using Newtonsoft.Json;
 
@@ -73,5 +74,15 @@ namespace PptExcelSync
         public string FieldName { get; set; }
         public string Formula { get; set; }
     }
+
+    public class ConditionalRule
+    {
+        public string Field { get; set; }
+        public string Operator { get; set; } // >, <, >=, <=, =
+        public double Threshold { get; set; }
+        public Color Color { get; set; }
+
+    }
+
 
 }
