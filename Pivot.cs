@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using DataTable = System.Data.DataTable;
@@ -12,6 +13,7 @@ namespace PptExcelSync
     public partial class Pivot : Form
     {
         public string FilePath = string.Empty;
+        private Color selectedColor = Color.Empty;
         public string SelectedRowField => cmbRowField.SelectedItem?.ToString();
         public string SelectedChartTypeField => cmbChartType.SelectedItem?.ToString();
         public List<string> SelectedValueFields =>
@@ -43,6 +45,40 @@ namespace PptExcelSync
             PopulateDropdowns(_data);
         }
 
+        private void btnPickColor_Click(object sender, EventArgs e)
+        {
+            if (colorDialog1.ShowDialog() == DialogResult.OK)
+            {
+                selectedColor = colorDialog1.Color;
+                btnPickColor.BackColor = selectedColor;
+            }
+        }
+        private void btnAddRule_Click(object sender, EventArgs e)
+        {
+            if (cmbField.SelectedItem == null || cmbOperator.SelectedItem == null || string.IsNullOrWhiteSpace(txtThreshold.Text))
+            {
+                MessageBox.Show("Please select field, operator, and enter a threshold.");
+                return;
+            }
+
+            string field = cmbField.SelectedItem.ToString();
+            string op = cmbOperator.SelectedItem.ToString();
+            string threshold = txtThreshold.Text;
+            string color = ColorTranslator.ToHtml(selectedColor);
+
+            string rule = $"{field} {op} {threshold} => {color}";
+            lstRules.Items.Add(rule);
+        }
+        private void btnDeleteRule_Click(object sender, EventArgs e)
+        {
+            if (lstRules.SelectedItem != null)
+                lstRules.Items.Remove(lstRules.SelectedItem);
+            else
+            {
+                MessageBox.Show("Select rule to delete.");
+                return;
+            }
+        }
         private void InitializeValueContextMenu()
         {
             valueContextMenu = new ContextMenuStrip();
@@ -94,16 +130,10 @@ namespace PptExcelSync
 
         private void PopulateDropdowns(DataTable data)
         {
-            // Row fields string columns
             cmbRowField.Items.Clear();
-            //foreach (DataColumn col in data.Columns)
-            //{
-            //    cmbRowField.Items.Add(col.ColumnName);
-            //}
-
-            // Value fields = detect numeric columns by checking first few rows
-            //cmbValueField.Items.Clear();
             clbValueFields.Items.Clear();
+            cmbField.Items.Clear();
+
             foreach (DataColumn col in data.Columns)
             {
                 bool isNumeric = true;
@@ -123,6 +153,7 @@ namespace PptExcelSync
                 if (isNumeric)
                 {
                     clbValueFields.Items.Add(col.ColumnName);
+                    cmbField.Items.Add(col.ColumnName);
                 }
                 else
                 {
@@ -199,5 +230,39 @@ namespace PptExcelSync
                 MessageBox.Show("Error adding calculated field: " + ex.Message);
             }
         }
+
+        private void clbValueFields_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        public List<ConditionalRule> GetConditionalRules()
+        {
+            var rules = new List<ConditionalRule>();
+
+            foreach (string item in lstRules.Items)
+            {
+                // Example format: "Quantity > 50 => #FF0000"
+                var parts = item.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length < 5) continue;
+
+                string field = parts[0];
+                string op = parts[1];
+                double threshold = double.TryParse(parts[2], out var t) ? t : 0;
+                string colorHex = parts[4];
+                var color = ColorTranslator.FromHtml(colorHex);
+
+                rules.Add(new ConditionalRule
+                {
+                    Field = field,
+                    Operator = op,
+                    Threshold = threshold,
+                    Color = color
+                });
+            }
+
+            return rules;
+        }
+
     }
 }

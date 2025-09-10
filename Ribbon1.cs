@@ -310,7 +310,6 @@ namespace PptExcelSync
             var dropdown = (RibbonDropDown)sender;
             selectedChartType = dropdown.SelectedItem.Label; 
         }
-
         private void btnCreateChart_Click_Click(object sender, RibbonControlEventArgs e)
         {
             if (ddlChartType.SelectedItem == null || ddlDatasets.SelectedItem.Label == "-- select --")
@@ -342,6 +341,7 @@ namespace PptExcelSync
 
             // Show Pivot dialog
             var form = new Pivot(dt, filePath);
+        
             if (form.ShowDialog() == DialogResult.OK)
             {
                 
@@ -352,13 +352,16 @@ namespace PptExcelSync
                 }
                 var pivot = CreatePivot(dt, form.SelectedRowField, form.SelectedValueFields, form.SelectedAggregations);
 
+                // ⬇️ Get rules from the form
+                var rules = form.GetConditionalRules();
+
                 // Insert pivot into PowerPoint
                 string chartType =  form.SelectedChartType.ToString();
 
                 if(chartType != "0")
-                  InsertPivotChartIntoPowerPoint(pivot, form.SelectedChartType);
+                  InsertPivotChartIntoPowerPoint(pivot, form.SelectedChartType, rules);
                 else
-                  InsertTableIntoPowerPoint(pivot, 25);
+                  InsertTableIntoPowerPoint(pivot, 25, rules);
             }
         }
 
@@ -413,276 +416,153 @@ namespace PptExcelSync
             return pivot;
         }
 
-        /// <summary>
-        /// Insert a DataTable into PowerPoint slides as a table. Splits into multiple slides if too many rows.
-        /// </summary>
-        //public void InsertTableIntoPowerPoint(DataTable dt, int maxDataRowsPerSlide = 20)
-        //{
-        //    if (dt == null || dt.Columns.Count == 0)
-        //    {
-        //        MessageBox.Show("No data to insert.");
-        //        return;
-        //    }
-
-        //    try
-        //    {
-        //        var app = Globals.ThisAddIn.Application;
-
-        //        // Ensure we have a presentation
-        //        PowerPoint.Presentation pres = null;
-        //        if (app.Presentations.Count == 0)
-        //            pres = app.Presentations.Add(Office.MsoTriState.msoTrue);
-        //        else
-        //            pres = app.ActivePresentation;
-
-        //        int totalRows = dt.Rows.Count;
-        //        int cols = dt.Columns.Count;
-        //        int processedRows = 0;
-
-        //        // Slide dimensions
-        //        float slideW = (float)pres.PageSetup.SlideWidth;
-        //        float slideH = (float)pres.PageSetup.SlideHeight;
-        //        float marginLeft = 40f;
-        //        float marginTop = 60f;
-        //        float tableWidth = slideW - marginLeft * 2;
-        //        float tableHeight = slideH - marginTop * 2 - 20f; // leave some bottom margin
-
-        //        while (processedRows < totalRows || (totalRows == 0 && processedRows == 0))
-        //        {
-        //            int rowsThisSlice = Math.Min(maxDataRowsPerSlide, totalRows - processedRows);
-        //            // If no data rows (empty dt) still create header-only table once
-        //            int tableRows = Math.Max(1, rowsThisSlice) + 1; // +1 for header
-
-        //            // Create a new blank slide
-        //            var slide = pres.Slides.Add(pres.Slides.Count + 1, PowerPoint.PpSlideLayout.ppLayoutBlank);
-
-        //            // Safety: remove placeholders if any
-        //            foreach (PowerPoint.Shape shp in slide.Shapes)
-        //            {
-        //                if (shp.Type == Office.MsoShapeType.msoPlaceholder)
-        //                    shp.Delete();
-        //            }
-
-        //            // Add PPT table
-        //            var shape = slide.Shapes.AddTable(tableRows, cols, marginLeft, marginTop, tableWidth, tableHeight);
-        //            var table = shape.Table;
-
-        //            // Set approximate column widths
-        //            float colWidth = tableWidth / cols;
-        //            try
-        //            {
-        //                for (int c = 1; c <= cols; c++)
-        //                {
-        //                    table.Columns[c].Width = colWidth;
-        //                }
-        //            }
-        //            catch
-        //            {
-        //                // Some PowerPoint versions might not allow setting width this way; ignore if it fails.
-        //            }
-
-        //            // Header row formatting
-        //            for (int c = 0; c < cols; c++)
-        //            {
-        //                var cell = table.Cell(1, c + 1); // first row is header
-
-        //                // Set header text
-        //                cell.Shape.TextFrame.TextRange.Text = dt.Columns[c].ColumnName;
-        //                cell.Shape.TextFrame.TextRange.Font.Bold = Office.MsoTriState.msoTrue;
-        //                cell.Shape.TextFrame.TextRange.Font.Size = 12;
-
-        //                // Header background color
-        //                cell.Shape.Fill.Visible = Office.MsoTriState.msoTrue;
-        //                cell.Shape.Fill.BackColor.RGB = ColorTranslator.ToOle(Color.SteelBlue);
-
-        //                // Header text color (white)
-        //                cell.Shape.TextFrame.TextRange.Font.Color.RGB = ColorTranslator.ToOle(Color.White);
-
-        //                // Center align header text
-        //                cell.Shape.TextFrame.VerticalAnchor = Office.MsoVerticalAnchor.msoAnchorMiddle;
-        //                cell.Shape.TextFrame.TextRange.ParagraphFormat.Alignment =
-        //                    PowerPoint.PpParagraphAlignment.ppAlignCenter;
-        //            }
-
-
-        //            // Fill data rows
-        //            for (int r = 0; r < rowsThisSlice; r++)
-        //            {
-        //                int dataRowIndex = processedRows + r;
-        //                for (int c = 0; c < cols; c++)
-        //                {
-        //                    object val = dt.Rows[dataRowIndex][c];
-        //                    string text = val?.ToString() ?? string.Empty;
-
-        //                    var cell = table.Cell(r + 2, c + 1);
-        //                    cell.Shape.TextFrame.TextRange.Text = text;
-        //                    cell.Shape.TextFrame.TextRange.Font.Size = 10;
-        //                    // left-align non-numeric, right-align numeric
-        //                    double dummy;
-        //                    if (double.TryParse(text, out dummy))
-        //                        cell.Shape.TextFrame.TextRange.ParagraphFormat.Alignment = PowerPoint.PpParagraphAlignment.ppAlignRight;
-        //                    else
-        //                        cell.Shape.TextFrame.TextRange.ParagraphFormat.Alignment = PowerPoint.PpParagraphAlignment.ppAlignLeft;
-        //                }
-        //            }
-
-        //            // Move to next slice
-        //            processedRows += rowsThisSlice;
-        //            if (totalRows == 0) break; // handled empty table case
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"Error inserting table into PowerPoint: {ex.Message}");
-        //    }
-        //}
-
-
-        public void InsertTableIntoPowerPoint(DataTable dt, int maxDataRowsPerSlide = 20)
-        {
-            if (dt == null || dt.Columns.Count == 0)
-            {
-                MessageBox.Show("No data to insert.");
-                return;
-            }
-
-            try
-            {
-                var app = Globals.ThisAddIn.Application;
-                PowerPoint.Presentation pres = app.Presentations.Count > 0
-                    ? app.ActivePresentation
-                    : app.Presentations.Add(Office.MsoTriState.msoTrue);
-
-                int totalRows = dt.Rows.Count;
-                int cols = dt.Columns.Count;
-                int processedRows = 0;
-
-                float slideW = (float)pres.PageSetup.SlideWidth;
-                float slideH = (float)pres.PageSetup.SlideHeight;
-                float marginLeft = 40f;
-                float marginTop = 60f;
-                float tableWidth = slideW - marginLeft * 2;
-                float tableHeight = slideH - marginTop * 2 - 20f;
-
-                while (processedRows < totalRows || (totalRows == 0 && processedRows == 0))
-                {
-                    int rowsThisSlice = Math.Min(maxDataRowsPerSlide, totalRows - processedRows);
-                    int tableRows = Math.Max(1, rowsThisSlice) + 1;
-
-                    var slide = pres.Slides.Add(pres.Slides.Count + 1, PowerPoint.PpSlideLayout.ppLayoutBlank);
-                    foreach (PowerPoint.Shape shp in slide.Shapes)
-                        if (shp.Type == Office.MsoShapeType.msoPlaceholder) shp.Delete();
-
-                    var shape = slide.Shapes.AddTable(tableRows, cols, marginLeft, marginTop, tableWidth, tableHeight);
-                    var table = shape.Table;
-
-                    float colWidth = tableWidth / cols;
-                    for (int c = 1; c <= cols; c++)
-                        table.Columns[c].Width = colWidth;
-
-                    // Header row formatting
-                    for (int c = 0; c < cols; c++)
-                    {
-                        var cell = table.Cell(1, c + 1);
-                        cell.Shape.TextFrame.TextRange.Text = dt.Columns[c].ColumnName;
-                        cell.Shape.TextFrame.TextRange.Font.Bold = Office.MsoTriState.msoTrue;
-                        cell.Shape.TextFrame.TextRange.Font.Size = 12;
-                        cell.Shape.Fill.Visible = Office.MsoTriState.msoTrue;
-                        cell.Shape.Fill.BackColor.RGB = ColorTranslator.ToOle(Color.SteelBlue);
-                        cell.Shape.TextFrame.TextRange.Font.Color.RGB = ColorTranslator.ToOle(Color.White);
-                        cell.Shape.TextFrame.VerticalAnchor = Office.MsoVerticalAnchor.msoAnchorMiddle;
-                        cell.Shape.TextFrame.TextRange.ParagraphFormat.Alignment =
-                            PowerPoint.PpParagraphAlignment.ppAlignCenter;
-                    }
-
-                    // Data rows
-                    for (int r = 0; r < rowsThisSlice; r++)
-                    {
-                        int dataRowIndex = processedRows + r;
-                        for (int c = 0; c < cols; c++)
-                        {
-                            var cell = table.Cell(r + 2, c + 1);
-                            string text = dt.Rows[dataRowIndex][c]?.ToString() ?? "";
-                            cell.Shape.TextFrame.TextRange.Text = text;
-                            cell.Shape.TextFrame.TextRange.Font.Size = 10;
-
-                            // Alternate row colors
-                            cell.Shape.Fill.Visible = Office.MsoTriState.msoTrue;
-                            cell.Shape.Fill.BackColor.RGB = (r % 2 == 0)
-                                ? ColorTranslator.ToOle(Color.WhiteSmoke)
-                                : ColorTranslator.ToOle(Color.LightGray);
-
-                            // Alignment
-                            double dummy;
-                            if (double.TryParse(text, out dummy))
-                                cell.Shape.TextFrame.TextRange.ParagraphFormat.Alignment = PowerPoint.PpParagraphAlignment.ppAlignRight;
-                            else
-                                cell.Shape.TextFrame.TextRange.ParagraphFormat.Alignment = PowerPoint.PpParagraphAlignment.ppAlignLeft;
-                        }
-                    }
-
-                    processedRows += rowsThisSlice;
-                    if (totalRows == 0) break;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error inserting table into PowerPoint: {ex.Message}");
-            }
-        }
-
-        public void InsertPivotChartIntoPowerPoint(DataTable pivotTable, Office.XlChartType chartType)
+        public void InsertTableIntoPowerPoint(DataTable pivotTable, float fontSize, List<ConditionalRule> rules = null)
         {
             try
             {
                 var app = Globals.ThisAddIn.Application;
                 var pres = app.Presentations.Count > 0
                     ? app.ActivePresentation
-                    : app.Presentations.Add(Office.MsoTriState.msoTrue);
+                    : app.Presentations.Add(Microsoft.Office.Core.MsoTriState.msoTrue);
 
-                var slide = pres.Slides.Add(
-                    pres.Slides.Count + 1,
-                    PowerPoint.PpSlideLayout.ppLayoutBlank);
+                var slide = pres.Slides.Add(pres.Slides.Count + 1,
+                    Microsoft.Office.Interop.PowerPoint.PpSlideLayout.ppLayoutBlank);
 
-                // Create chart
+                // Insert as table
+                int rows = pivotTable.Rows.Count + 1;
+                int cols = pivotTable.Columns.Count;
+                var table = slide.Shapes.AddTable(rows, cols, 50, 50, 600, 20 * rows).Table;
+
+                // Write headers
+                for (int c = 0; c < cols; c++)
+                {
+                    table.Cell(1, c + 1).Shape.TextFrame.TextRange.Text = pivotTable.Columns[c].ColumnName;
+                }
+
+                // Write data
+                for (int r = 0; r < pivotTable.Rows.Count; r++)
+                {
+                    for (int c = 0; c < cols; c++)
+                    {
+                        var cellText = pivotTable.Rows[r][c].ToString();
+                        var cell = table.Cell(r + 2, c + 1);
+                        cell.Shape.TextFrame.TextRange.Text = cellText;
+                        var abc = double.TryParse(cellText, out var vall);
+                        // Conditional formatting
+                        if (rules != null)
+                        {
+                            foreach (var rule in rules)
+                            {
+                                if (pivotTable.Columns[c].ColumnName.Contains(rule.Field))
+                                {
+                                    if (Applies(vall, rule))
+                                        cell.Shape.Fill.ForeColor.RGB = ColorTranslator.ToOle(rule.Color);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error inserting table: " + ex.Message);
+            }
+        }
+
+        public void InsertPivotChartIntoPowerPoint(
+    DataTable pivotTable,
+    Office.XlChartType chartType,
+    List<ConditionalRule> rules = null)
+        {
+            try
+            {
+                var app = Globals.ThisAddIn.Application;
+                var pres = app.Presentations.Count > 0
+                    ? app.ActivePresentation
+                    : app.Presentations.Add(Microsoft.Office.Core.MsoTriState.msoTrue);
+
+                var slide = pres.Slides.Add(pres.Slides.Count + 1,
+                    Microsoft.Office.Interop.PowerPoint.PpSlideLayout.ppLayoutBlank);
+
                 var chartShape = slide.Shapes.AddChart(chartType, 50, 50, 600, 350);
                 var chart = chartShape.Chart;
 
-                // Get embedded workbook
-                var wb = chart.ChartData.Workbook;
-                var ws = (Excel.Worksheet)wb.Worksheets[1];
-
-                // Clear old cells
-                ws.Cells.Clear();
+                var workbook = chart.ChartData.Workbook;
+                var sheet = workbook.Worksheets[1];
+                sheet.Cells.Clear();
 
                 int rows = pivotTable.Rows.Count;
                 int cols = pivotTable.Columns.Count;
 
-                // Write headers
+                // --- Write headers ---
                 for (int c = 0; c < cols; c++)
-                    ws.Cells[1, c + 1] = pivotTable.Columns[c].ColumnName;
+                    sheet.Cells[1, c + 1] = pivotTable.Columns[c].ColumnName;
 
-                // Write data
+                // --- Write data ---
                 for (int r = 0; r < rows; r++)
                 {
                     for (int c = 0; c < cols; c++)
                     {
-                        var val = pivotTable.Rows[r][c];
-                        if (double.TryParse(val?.ToString(), out double num))
-                            ws.Cells[r + 2, c + 1] = num;
+                        var value = pivotTable.Rows[r][c]?.ToString() ?? "";
+                        if (double.TryParse(value, out var val))
+                            sheet.Cells[r + 2, c + 1] = val;
                         else
-                            ws.Cells[r + 2, c + 1] = val?.ToString() ?? "";
+                            sheet.Cells[r + 2, c + 1] = value;
+                    }
+                }
+
+                // --- Refresh chart ---
+                // chart.ChartData.Activate();
+                // chart.Refresh();
+
+                //chart.ChartData.Workbook.Application.CalculateFull();
+                //workbook.Close();
+                //chart.Refresh();
+
+                //Excel.Range fullRange = sheet.Range[sheet.Cells[1, 1], sheet.Cells[rows + 1, cols]];
+                //string rangeAddress = fullRange.Address[false, false]; // e.g. "A1:E5"
+                //chart.SetSourceData(sheet.Range[rangeAddress]);
+
+
+         
+
+                // --- Apply conditional formatting ---
+                if (rules != null)
+                {
+                    for (int s = 1; s <= chart.SeriesCollection().Count; s++)
+                    {
+                        var series = chart.SeriesCollection(s);
+
+                        for (int p = 1; p <= series.Points().Count; p++)
+                        {
+                            // Try to map back: Series name = column header, Point index = row
+                            string seriesName = series.Name;
+                            string pointLabel = pivotTable.Rows[p - 1][0].ToString(); // assumes first col is category
+                            double pointValue;
+
+                            if (double.TryParse(pivotTable.Rows[p - 1][s].ToString(), out pointValue))
+                            {
+                                foreach (var rule in rules)
+                                {
+                                    if (seriesName.Contains(rule.Field) && Applies(pointValue, rule))
+                                    {
+                                        series.Points(p).Format.Fill.ForeColor.RGB =
+                                            ColorTranslator.ToOle(rule.Color);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
                 // ✅ Build category array (first column)
-                Excel.Range categoryRange = ws.Range[ws.Cells[2, 1], ws.Cells[rows + 1, 1]];
+                Excel.Range categoryRange = sheet.Range[sheet.Cells[2, 1], sheet.Cells[rows + 1, 1]];
                 object[,] categories = categoryRange.Value2 as object[,];
 
                 // ✅ Loop through numeric columns → each as a series
                 for (int c = 2; c <= cols; c++)
                 {
-                    Excel.Range valuesRange = ws.Range[ws.Cells[2, c], ws.Cells[rows + 1, c]];
+                    Excel.Range valuesRange = sheet.Range[sheet.Cells[2, c], sheet.Cells[rows + 1, c]];
                     object[,] values = valuesRange.Value2 as object[,];
                     string seriesName = pivotTable.Columns[c - 1].ColumnName;
 
@@ -709,17 +589,26 @@ namespace PptExcelSync
                 chart.ChartTitle.Text = "Pivot Chart";
 
                 // Hide Excel so user doesn’t see embedded sheet
-                wb.Application.Visible = false;
+                sheet.Application.Visible = false;
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error inserting chart: {ex.Message}");
+                MessageBox.Show("Error inserting chart: " + ex.Message);
             }
         }
 
-        public string GetSelectedFilePath()
+        public bool Applies(double value, ConditionalRule rule)
         {
-           return ddlDatasets.SelectedItem.Tag.ToString();
+            switch (rule.Operator)
+            {
+                case ">": return value > rule.Threshold;
+                case "<": return value < rule.Threshold;
+                case ">=": return value >= rule.Threshold;
+                case "<=": return value <= rule.Threshold;
+                case "=": return value == rule.Threshold;
+                default: return false;
+            }
         }
+
     }
 }
