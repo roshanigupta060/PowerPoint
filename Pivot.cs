@@ -168,6 +168,14 @@ namespace PptExcelSync
             // Aggregations
             clbAggregations.Items.Clear();
             clbAggregations.Items.AddRange(new string[] { "Sum", "Average", "Count", "Max", "Min" });
+
+            // Fill filter fields with all columns
+            cmbFilterField.Items.Clear();
+            foreach (DataColumn col in data.Columns)
+            {
+                cmbFilterField.Items.Add(col.ColumnName);
+            }
+
         }
 
         private void btnGenerate_Click(object sender, EventArgs e)
@@ -263,6 +271,135 @@ namespace PptExcelSync
 
             return rules;
         }
+
+        public Dictionary<string, string> GetFilters()
+        {
+            var filters = new Dictionary<string, string>();
+
+            foreach (string item in lstFilters.Items)
+            {
+                var parts = item.Split('=');
+                if (parts.Length == 2)
+                {
+                    string field = parts[0].Trim();
+                    string value = parts[1].Trim();
+                    filters[field] = value;
+                }
+            }
+            return filters;
+        }
+
+        private void btnRemoveFilter_Click(object sender, EventArgs e)
+        {
+            if (lstFilters.SelectedItem != null)
+                lstFilters.Items.Remove(lstFilters.SelectedItem);
+        }
+
+        private void btnAddFilter_Click(object sender, EventArgs e)
+        {
+            if (cmbFilterField.SelectedItem == null || cmbFilterValue.SelectedItem == null)
+            {
+                MessageBox.Show("Please select both a field and a value.");
+                return;
+            }
+
+            string field = cmbFilterField.SelectedItem.ToString();
+            string value = cmbFilterValue.SelectedItem.ToString();
+
+            lstFilters.Items.Add($"{field} = {value}");
+        }
+
+        private void cmbFilterField_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            cmbFilterValue.Items.Clear();
+            string col = cmbFilterField.SelectedItem.ToString();
+
+            var distinctValues = _data.AsEnumerable()
+                                      .Select(r => r[col]?.ToString())
+                                      .Distinct()
+                                      .Where(v => !string.IsNullOrEmpty(v));
+
+            foreach (var val in distinctValues)
+                cmbFilterValue.Items.Add(val);
+        }
+
+        // put these as public methods on the Pivot form
+        public void LoadConfig(PivotConfig cfg)
+        {
+            // 1) set Dataset path (store in _filePath)
+            FilePath = cfg.DatasetPath;
+
+            // 2) set UI selections (Row dropdown, checked Value fields, Aggregations, ChartType, Filters, Calculated Fields)
+            if (!string.IsNullOrEmpty(cfg.RowField) && cmbRowField.Items.Contains(cfg.RowField))
+                cmbRowField.SelectedItem = cfg.RowField;
+
+            // Values: if using a CheckedListBox for values
+            foreach (var v in cfg.ValueFields ?? new List<string>())
+            {
+                for (int i = 0; i < clbValueFields.Items.Count; i++)
+                {
+                    if (string.Equals(clbValueFields.Items[i].ToString(), v, StringComparison.OrdinalIgnoreCase))
+                        clbValueFields.SetItemChecked(i, true);
+                }
+            }
+
+            // Aggregations: similar for clbAggregations
+            foreach (var a in cfg.Aggregations ?? new List<string>())
+            {
+                for (int i = 0; i < clbAggregations.Items.Count; i++)
+                    if (string.Equals(clbAggregations.Items[i].ToString(), a, StringComparison.OrdinalIgnoreCase))
+                        clbAggregations.SetItemChecked(i, true);
+            }
+
+            // ChartType: map name back to your ChartType dropdown
+            if (!string.IsNullOrEmpty(cfg.ChartTypeName))
+                cmbChartType.SelectedItem = cfg.ChartTypeName; // ensure names match stored strings
+
+            // Filters: populate your lstFilters
+            lstFilters.Items.Clear();
+            foreach (var f in cfg.Filters ?? new List<FilterRule>())
+                lstFilters.Items.Add($"{f.Column} = {f.Value}");
+
+            // Calculated fields: show in UI if needed (you might not need to re-add them as they are applied to dt already)
+            // Conditional Rules: populate UI list similarly
+        }
+
+        public PivotConfig GetConfig()
+        {
+            var cfg = new PivotConfig
+            {
+                DatasetPath = FilePath,
+                RowField = cmbRowField.SelectedItem?.ToString(),
+                ValueFields = clbValueFields.CheckedItems.Cast<string>().ToList(),
+                Aggregations = clbAggregations.CheckedItems.Cast<string>().ToList(),
+                ChartTypeName = cmbChartType.SelectedItem?.ToString()
+            };
+
+            // Filters
+            var filters = new List<FilterRule>();
+            foreach (string item in lstFilters.Items)
+            {
+                var parts = item.Split('=');
+                if (parts.Length == 2) filters.Add(new FilterRule { Column = parts[0].Trim(), Value = parts[1].Trim() });
+            }
+            cfg.Filters = filters;
+
+            // CalculatedFields and ConditionalRules - collect from UI/metadata as necessary
+            cfg.CalculatedFields = GetCalculatedFields();
+            cfg.ConditionalRules = GetConditionalRules();
+
+            return cfg;
+        }
+        private List<CalculatedFieldInfo> _calculatedFields = new List<CalculatedFieldInfo>();
+        private List<CalculatedFieldInfo> GetCalculatedFields()
+        {
+            // If you already have a metadata loader, call that instead.
+            // Otherwise, return an empty list if you don’t maintain them in-memory.
+            return _calculatedFields ?? new List<CalculatedFieldInfo>();
+        }
+        
+
+
 
     }
 }

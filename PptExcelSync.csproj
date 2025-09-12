@@ -294,6 +294,7 @@
     <Compile Include="Pivot.Designer.cs">
       <DependentUpon>Pivot.cs</DependentUpon>
     </Compile>
+    <Compile Include="PivotConfig.cs" />
     <Compile Include="PivotHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>

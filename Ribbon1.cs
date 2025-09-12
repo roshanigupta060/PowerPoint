@@ -1,5 +1,6 @@
 ﻿using Microsoft.Office.Tools.Ribbon;
 using NCalc;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -343,14 +344,15 @@ namespace PptExcelSync
             var form = new Pivot(dt, filePath);
         
             if (form.ShowDialog() == DialogResult.OK)
-            {
-                
+            {                
                 if (form.SelectedValueFields.Count() > 2)
                 {
                     MessageBox.Show("Please select only two values.");
                     return;
                 }
-                var pivot = CreatePivot(dt, form.SelectedRowField, form.SelectedValueFields, form.SelectedAggregations);
+
+                var filters = form.GetFilters();
+                var pivot = CreatePivot(dt, form.SelectedRowField, form.SelectedValueFields, form.SelectedAggregations, filters);
 
                 // ⬇️ Get rules from the form
                 var rules = form.GetConditionalRules();
@@ -365,10 +367,43 @@ namespace PptExcelSync
             }
         }
 
-        public DataTable CreatePivot(DataTable dt, string rowField, List<string> valueFields, List<string> aggFuncs)
+        private Dictionary<string, string> ConvertFilters(List<FilterRule> savedFilters)
         {
-            var grouped = dt.AsEnumerable().GroupBy(r => r[rowField].ToString());
+            var dict = new Dictionary<string, string>();
+            if (savedFilters != null)
+            {
+                foreach (var f in savedFilters)
+                {
+                    if (!string.IsNullOrWhiteSpace(f.Column) && !string.IsNullOrWhiteSpace(f.Value))
+                    {
+                        dict[f.Column] = f.Value;
+                    }
+                }
+            }
+            return dict;
+        }
 
+
+        public DataTable CreatePivot(DataTable dt,string rowField, List<string> valueFields, List<string> aggFuncs,
+              Dictionary<string, string> filters = null)
+        {
+            // --- Step 1: Apply filters if provided ---
+            IEnumerable<DataRow> query = dt.AsEnumerable();
+            if (filters != null && filters.Any())
+            {
+                foreach (var f in filters)
+                {
+                    string col = f.Key;
+                    string val = f.Value;
+
+                    query = query.Where(r => r[col]?.ToString() == val);
+                }
+            }
+
+            // --- Step 2: Group by row field ---
+            var grouped = query.GroupBy(r => r[rowField].ToString());
+
+            // --- Step 3: Build output table ---
             DataTable pivot = new DataTable();
             pivot.Columns.Add(rowField, typeof(string));
 
@@ -381,6 +416,7 @@ namespace PptExcelSync
                 }
             }
 
+            // --- Step 4: Fill data ---
             foreach (var g in grouped)
             {
                 var row = pivot.NewRow();
@@ -469,10 +505,7 @@ namespace PptExcelSync
             }
         }
 
-        public void InsertPivotChartIntoPowerPoint(
-    DataTable pivotTable,
-    Office.XlChartType chartType,
-    List<ConditionalRule> rules = null)
+        public void InsertPivotChartIntoPowerPoint(DataTable pivotTable, Office.XlChartType chartType,List<ConditionalRule> rules = null)
         {
             try
             {
@@ -511,49 +544,6 @@ namespace PptExcelSync
                     }
                 }
 
-                // --- Refresh chart ---
-                // chart.ChartData.Activate();
-                // chart.Refresh();
-
-                //chart.ChartData.Workbook.Application.CalculateFull();
-                //workbook.Close();
-                //chart.Refresh();
-
-                //Excel.Range fullRange = sheet.Range[sheet.Cells[1, 1], sheet.Cells[rows + 1, cols]];
-                //string rangeAddress = fullRange.Address[false, false]; // e.g. "A1:E5"
-                //chart.SetSourceData(sheet.Range[rangeAddress]);
-
-
-         
-
-                // --- Apply conditional formatting ---
-                if (rules != null)
-                {
-                    for (int s = 1; s <= chart.SeriesCollection().Count; s++)
-                    {
-                        var series = chart.SeriesCollection(s);
-
-                        for (int p = 1; p <= series.Points().Count; p++)
-                        {
-                            // Try to map back: Series name = column header, Point index = row
-                            string seriesName = series.Name;
-                            string pointLabel = pivotTable.Rows[p - 1][0].ToString(); // assumes first col is category
-                            double pointValue;
-
-                            if (double.TryParse(pivotTable.Rows[p - 1][s].ToString(), out pointValue))
-                            {
-                                foreach (var rule in rules)
-                                {
-                                    if (seriesName.Contains(rule.Field) && Applies(pointValue, rule))
-                                    {
-                                        series.Points(p).Format.Fill.ForeColor.RGB =
-                                            ColorTranslator.ToOle(rule.Color);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
 
                 // ✅ Build category array (first column)
                 Excel.Range categoryRange = sheet.Range[sheet.Cells[2, 1], sheet.Cells[rows + 1, 1]];
@@ -566,20 +556,23 @@ namespace PptExcelSync
                     object[,] values = valuesRange.Value2 as object[,];
                     string seriesName = pivotTable.Columns[c - 1].ColumnName;
 
-                    if (c - 1 <= chart.SeriesCollection().Count)
+                    if (values != null)
                     {
-                        var series = (PowerPoint.Series)chart.SeriesCollection(c - 1);
-                        series.Name = seriesName;
-                        series.Values = values;
-                        series.XValues = categories;
-                    }
-                    else
-                    {
-                        chart.SeriesCollection().NewSeries();
-                        var series = (PowerPoint.Series)chart.SeriesCollection(chart.SeriesCollection().Count);
-                        series.Name = seriesName;
-                        series.Values = values;
-                        series.XValues = categories;
+                        if (c - 1 <= chart.SeriesCollection().Count)
+                        {
+                            var series = (PowerPoint.Series)chart.SeriesCollection(c - 1);
+                            series.Name = seriesName;
+                            series.Values = values;
+                            series.XValues = categories;
+                        }
+                        else
+                        {
+                            chart.SeriesCollection().NewSeries();
+                            var series = (PowerPoint.Series)chart.SeriesCollection(chart.SeriesCollection().Count);
+                            series.Name = seriesName;
+                            series.Values = values;
+                            series.XValues = categories;
+                        }
                     }
                 }
 
@@ -590,6 +583,50 @@ namespace PptExcelSync
 
                 // Hide Excel so user doesn’t see embedded sheet
                 sheet.Application.Visible = false;
+
+                // assume `chartShape` is the PowerPoint.Shape you created and `config` is the PivotConfig you used
+               PivotConfig config = new PivotConfig();
+                string json = JsonConvert.SerializeObject(config);
+                chartShape.Tags.Add("ChartMakerMeta", json);
+
+                // Optional: set alt text too (visible in PowerPoint UI)
+                chartShape.AlternativeText = "ChartMaker|" + config.DatasetPath;
+
+                // --- Apply conditional formatting ---
+
+                if (rules != null)
+                {
+                    for (int s = 1; s <= chart.SeriesCollection().Count; s++)
+                    {
+                        var series = chart.SeriesCollection(s);
+                        string seriesName = series.Name;
+
+                        for (int p = 1; p <= series.Points().Count; p++)
+                        {
+                            // pivotTable: first column = category, so data starts at column index 1
+                            int dataColIndex = s;            // because s=1 → pivot col[1], s=2 → col[2] ...
+                            int dataRowIndex = p - 1;        // chart point index maps directly to pivot row
+
+                            if (dataRowIndex < pivotTable.Rows.Count &&
+                                dataColIndex < pivotTable.Columns.Count)
+                            {
+                                double pointValue;
+                                if (double.TryParse(pivotTable.Rows[dataRowIndex][dataColIndex].ToString(), out pointValue))
+                                {
+                                    foreach (var rule in rules)
+                                    {
+                                        if (seriesName.Contains(rule.Field) && Applies(pointValue, rule))
+                                        {
+                                            series.Points(p).Format.Fill.ForeColor.RGB =
+                                                ColorTranslator.ToOle(rule.Color);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
             }
             catch (Exception ex)
             {
@@ -607,6 +644,232 @@ namespace PptExcelSync
                 case "<=": return value <= rule.Threshold;
                 case "=": return value == rule.Threshold;
                 default: return false;
+            }
+        }
+
+        private void btnEditWithChartMaker_Click(object sender, RibbonControlEventArgs e)
+        {
+            try
+            {
+                var app = Globals.ThisAddIn.Application;
+                if (app.ActiveWindow == null || app.ActiveWindow.Selection == null ||
+                    app.ActiveWindow.Selection.Type != PowerPoint.PpSelectionType.ppSelectionShapes)
+                {
+                    MessageBox.Show("Please select a chart or table shape to edit.");
+                    return;
+                }
+
+                var shape = app.ActiveWindow.Selection.ShapeRange[1];
+                string metaJson = shape.Tags["ChartMakerMeta"];
+                if (string.IsNullOrEmpty(metaJson))
+                {
+                    MessageBox.Show("Selected shape is not a ChartMaker object.");
+                    return;
+                }
+
+                string filePath = ddlDatasets.SelectedItem.Tag.ToString();
+                var dt = new DatasetManager().LoadExcel(filePath);
+                // Show Pivot dialog
+                var form = new Pivot(dt, filePath);
+                var newConfig = form.GetConfig();
+
+                //var config = JsonConvert.DeserializeObject<PivotConfig>(metaJson);
+
+                if (string.IsNullOrEmpty(newConfig.DatasetPath) || !File.Exists(newConfig.DatasetPath))
+                {
+                    MessageBox.Show("Dataset file not found. Please re-select the Excel file.");
+                    return;
+                }
+
+
+
+                // Load dataset and apply any calculated fields (DatasetManager should handle metadata)
+                //var dt = new DatasetManager().LoadExcel(config.DatasetPath);
+
+                // Reapply any calculated fields included directly in the config (optional):
+                var ph = new PivotHelper();
+                if (newConfig.CalculatedFields != null)
+                {
+                    foreach (var cf in newConfig.CalculatedFields)
+                    {
+                        if (!dt.Columns.Contains(cf.FieldName))
+                            ph.AddCalculatedField(dt, cf.FieldName, cf.Formula);
+                    }
+                }
+
+                // Open Pivot form pre-filled
+    
+                    form.LoadConfig(newConfig); // method you will implement in Pivot form
+                    if (form.ShowDialog() == DialogResult.OK)
+                    {
+                        // user updated config in UI; collect the new config and rebuild
+                       // var newConfig = form.GetConfig(); // method returns PivotConfig
+                        var newPivot = CreatePivot(dt, newConfig.RowField, newConfig.ValueFields, newConfig.Aggregations, ConvertFilters(newConfig.Filters));
+
+                        // Update the existing shape in-place
+                        if (shape.Type == Office.MsoShapeType.msoChart)
+                            UpdatePivotChartInPowerPoint(shape, newPivot, newConfig);
+                        else if (shape.HasTable == Office.MsoTriState.msoTrue)
+                            UpdatePivotTableInPowerPoint(shape, newPivot, newConfig);
+
+                        // Update the shape tag with the new config
+                        shape.Tags.Delete("ChartMakerMeta");
+                        shape.Tags.Add("ChartMakerMeta", JsonConvert.SerializeObject(newConfig));
+                    }
+                
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Edit failed: " + ex.Message);
+            }
+        }
+
+        public void UpdatePivotChartInPowerPoint(PowerPoint.Shape chartShape, DataTable pivotTable, PivotConfig config)
+        {
+            Excel.Workbook workbook = null;
+            Excel.Worksheet sheet = null;
+            try
+            {
+                var chart = chartShape.Chart;
+                // Access embedded workbook & worksheet
+                workbook = chart.ChartData.Workbook;
+                sheet = (Excel.Worksheet)workbook.Worksheets[1];
+                sheet.Cells.Clear();
+
+                int rows = pivotTable.Rows.Count;
+                int cols = pivotTable.Columns.Count;
+
+                // Write headers
+                for (int c = 0; c < cols; c++)
+                    sheet.Cells[1, c + 1] = pivotTable.Columns[c].ColumnName;
+
+                // Write data
+                for (int r = 0; r < rows; r++)
+                    for (int c = 0; c < cols; c++)
+                        sheet.Cells[r + 2, c + 1] = pivotTable.Rows[r][c];
+
+                // Build full range and set source
+                Excel.Range fullRange = sheet.Range[sheet.Cells[1, 1], sheet.Cells[rows + 1, cols]];
+                // Use address approach to be safe
+                string addr = sheet.Name + "!" + fullRange.Address[false, false];
+                chart.SetSourceData(addr, Excel.XlRowCol.xlColumns);
+
+                chart.PlotBy = PowerPoint.XlRowCol.xlColumns;
+
+                // rename series to pivot headers (skip category col at index 0)
+                for (int s = 2; s <= cols; s++)
+                {
+                    int seriesIndex = s - 1; // series index is 1-based and usually corresponds
+                    try
+                    {
+                        var series = chart.SeriesCollection(seriesIndex);
+                        series.Name = pivotTable.Columns[s - 1].ColumnName;
+                    }
+                    catch { /* ignore if series doesn't exist yet */ }
+                }
+
+                // Refresh chart
+                // don't call chart.ChartData.Activate(); that shows Excel UI
+                workbook.Application.CalculateFull();
+                chart.Refresh();
+
+                // Apply conditional formatting rules per point (use pivotTable to map)
+                if (config?.ConditionalRules != null && config.ConditionalRules.Any())
+                {
+                    for (int s = 1; s <= chart.SeriesCollection().Count; s++)
+                    {
+                        var series = chart.SeriesCollection(s);
+                        string seriesName = series.Name;
+                        for (int p = 1; p <= series.Points().Count; p++)
+                        {
+                            int dataRowIndex = p - 1;
+                            int dataColIndex = s; // series s maps to pivotTable column s (assuming col0=category)
+                            if (dataRowIndex < pivotTable.Rows.Count && dataColIndex < pivotTable.Columns.Count)
+                            {
+                                if (double.TryParse(pivotTable.Rows[dataRowIndex][dataColIndex].ToString(), out var pointVal))
+                                {
+                                    foreach (var rule in config.ConditionalRules)
+                                    {
+                                        if (seriesName.Contains(rule.Field) && Applies(pointVal,rule))
+                                        {
+                                            series.Points(p).Format.Fill.ForeColor.RGB = ColorTranslator.ToOle(rule.Color);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                // Close/hide workbook and release COM
+                if (workbook != null)
+                {
+                    try { workbook.Close(false); } catch { }
+                    Marshal.ReleaseComObject(sheet);
+                    Marshal.ReleaseComObject(workbook);
+                }
+            }
+        }
+
+        public void UpdatePivotTableInPowerPoint(PowerPoint.Shape tableShape, DataTable pivotTable, PivotConfig config)
+        {
+            try
+            {
+                if (tableShape.HasTable != Office.MsoTriState.msoTrue) return;
+                var table = tableShape.Table;
+                int rows = pivotTable.Rows.Count + 1;
+                int cols = pivotTable.Columns.Count;
+
+                // Optionally, rebuild if table size mismatches: delete & recreate, or resize shape.Table if possible.
+                // Here we'll assume size matches or recreate if necessary:
+                if (table.Rows.Count != rows || table.Columns.Count != cols)
+                {
+                    // remove existing and add new table (simple approach)
+                    var slide = tableShape.Parent as PowerPoint.Slide;
+                    var left = tableShape.Left; var top = tableShape.Top; var w = tableShape.Width; var h = tableShape.Height;
+                    tableShape.Delete();
+                    var newShape = slide.Shapes.AddTable(rows, cols, left, top, w, h);
+                    table = newShape.Table;
+                    tableShape = newShape;
+                }
+
+                // Write headers
+                for (int c = 0; c < cols; c++)
+                    table.Cell(1, c + 1).Shape.TextFrame.TextRange.Text = pivotTable.Columns[c].ColumnName;
+
+                // Write values and conditional formatting
+                for (int r = 0; r < pivotTable.Rows.Count; r++)
+                {
+                    for (int c = 0; c < cols; c++)
+                    {
+                        var text = pivotTable.Rows[r][c]?.ToString() ?? "";
+                        var cell = table.Cell(r + 2, c + 1);
+                        cell.Shape.TextFrame.TextRange.Text = text;
+
+                        // conditional format
+                        if (config?.ConditionalRules != null)
+                        {
+                            foreach (var rule in config.ConditionalRules)
+                            {
+                                if (pivotTable.Columns[c].ColumnName.Contains(rule.Field)
+                                    && double.TryParse(text, out var v) && Applies(v, rule))
+                                {
+                                    cell.Shape.Fill.ForeColor.RGB = ColorTranslator.ToOle(rule.Color);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Update tag on the shape
+                tableShape.Tags.Delete("ChartMakerMeta");
+                tableShape.Tags.Add("ChartMakerMeta", JsonConvert.SerializeObject(config));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error updating table: " + ex.Message);
             }
         }
 
