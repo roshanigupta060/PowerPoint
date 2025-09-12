@@ -48,6 +48,7 @@
             this.btnInsertTable_Click = this.Factory.CreateRibbonButton();
             this.btnCreateChart_Click = this.Factory.CreateRibbonButton();
             this.tab1 = this.Factory.CreateRibbonTab();
+            this.btnEditWithChartMaker = this.Factory.CreateRibbonButton();
             this.group1.SuspendLayout();
             this.tab1.SuspendLayout();
             this.SuspendLayout();
@@ -61,6 +62,7 @@
             this.group1.Items.Add(this.btnInsertChart_Click);
             this.group1.Items.Add(this.btnInsertTable_Click);
             this.group1.Items.Add(this.btnCreateChart_Click);
+            this.group1.Items.Add(this.btnEditWithChartMaker);
             this.group1.Name = "group1";
             // 
             // btnUploadExcel
@@ -126,6 +128,12 @@
             this.tab1.Label = "TabAddIns";
             this.tab1.Name = "tab1";
             // 
+            // btnEditWithChartMaker
+            // 
+            this.btnEditWithChartMaker.Label = "Edit Chart";
+            this.btnEditWithChartMaker.Name = "btnEditWithChartMaker";
+            this.btnEditWithChartMaker.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnEditWithChartMaker_Click);
+            // 
             // Ribbon1
             // 
             this.Name = "Ribbon1";
@@ -151,6 +159,7 @@
         internal Microsoft.Office.Tools.Ribbon.RibbonDropDown ddlChartType;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton btnCreateChart_Click;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton btnPivotView;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton btnEditWithChartMaker;
     }
 
     partial class ThisRibbonCollection
