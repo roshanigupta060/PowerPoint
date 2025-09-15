@@ -1,10 +1,12 @@
-﻿using Microsoft.Office.Interop.Excel;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using Microsoft.Office.Interop.Excel;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using Color = System.Drawing.Color;
 using DataTable = System.Data.DataTable;
 using Office = Microsoft.Office.Core;
 
@@ -113,9 +115,13 @@ namespace PptExcelSync
                 MessageBox.Show("This field is not a calculated field and cannot be deleted.");
                 return;
             }
+            else if (calcField != null)
+            {
+                GetCalculatedFields(calcField);
+            }
 
-            // --- Delete ---
-            metadata.CalculatedFields.Remove(calcField);
+                // --- Delete ---
+                metadata.CalculatedFields.Remove(calcField);
             metadata.Save(FilePath);
 
             if (_data.Columns.Contains(fieldName))
@@ -357,11 +363,19 @@ namespace PptExcelSync
 
             // Filters: populate your lstFilters
             lstFilters.Items.Clear();
-            foreach (var f in cfg.Filters ?? new List<FilterRule>())
-                lstFilters.Items.Add($"{f.Column} = {f.Value}");
+            foreach (var f in cfg.Filters ?? new Dictionary<string, string>())
+                 lstFilters.Items.Add($"{f.Key} = {f.Value}");
 
             // Calculated fields: show in UI if needed (you might not need to re-add them as they are applied to dt already)
             // Conditional Rules: populate UI list similarly
+            foreach (var f in cfg.ConditionalRules ?? new List<ConditionalRule>())
+            {
+                cmbOperator.Text = f.Operator;
+                cmbField.Text = f.Field;
+                txtThreshold.Text = f.Threshold.ToString();
+                string color = ColorTranslator.ToHtml(f.Color);
+                lstRules.Items.Add($"{f.Field} {f.Operator} {f.Threshold} => {color}");
+            }
         }
 
         public PivotConfig GetConfig()
@@ -372,27 +386,19 @@ namespace PptExcelSync
                 RowField = cmbRowField.SelectedItem?.ToString(),
                 ValueFields = clbValueFields.CheckedItems.Cast<string>().ToList(),
                 Aggregations = clbAggregations.CheckedItems.Cast<string>().ToList(),
-                ChartTypeName = cmbChartType.SelectedItem?.ToString()
+                ChartTypeName = cmbChartType.SelectedItem?.ToString(),
+                Filters = GetFilters(),
+                ConditionalRules = GetConditionalRules()
             };
-
-            // Filters
-            var filters = new List<FilterRule>();
-            foreach (string item in lstFilters.Items)
-            {
-                var parts = item.Split('=');
-                if (parts.Length == 2) filters.Add(new FilterRule { Column = parts[0].Trim(), Value = parts[1].Trim() });
-            }
-            cfg.Filters = filters;
-
-            // CalculatedFields and ConditionalRules - collect from UI/metadata as necessary
             cfg.CalculatedFields = GetCalculatedFields();
-            cfg.ConditionalRules = GetConditionalRules();
 
             return cfg;
         }
         private List<CalculatedFieldInfo> _calculatedFields = new List<CalculatedFieldInfo>();
-        private List<CalculatedFieldInfo> GetCalculatedFields()
+        public List<CalculatedFieldInfo> GetCalculatedFields(CalculatedFieldInfo fieldInfo = null)
         {
+            if(fieldInfo != null)
+            _calculatedFields.Add(fieldInfo);
             // If you already have a metadata loader, call that instead.
             // Otherwise, return an empty list if you don’t maintain them in-memory.
             return _calculatedFields ?? new List<CalculatedFieldInfo>();
