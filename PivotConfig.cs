@@ -14,7 +14,7 @@ namespace PptExcelSync
         public List<string> Aggregations { get; set; } = new List<string>();
         public string ChartTypeName { get; set; }            // string representation (e.g., "xlColumnClustered")
         public List<CalculatedFieldInfo> CalculatedFields { get; set; } = new List<CalculatedFieldInfo>();
-        public List<FilterRule> Filters { get; set; } = new List<FilterRule>();
+        public Dictionary<string, string>  Filters { get; set; } = new Dictionary<string, string>();
         public List<ConditionalRule> ConditionalRules { get; set; } = new List<ConditionalRule>();
     }
 

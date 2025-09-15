@@ -47,8 +47,8 @@
             this.btnInsertChart_Click = this.Factory.CreateRibbonButton();
             this.btnInsertTable_Click = this.Factory.CreateRibbonButton();
             this.btnCreateChart_Click = this.Factory.CreateRibbonButton();
-            this.tab1 = this.Factory.CreateRibbonTab();
             this.btnEditWithChartMaker = this.Factory.CreateRibbonButton();
+            this.tab1 = this.Factory.CreateRibbonTab();
             this.group1.SuspendLayout();
             this.tab1.SuspendLayout();
             this.SuspendLayout();
@@ -121,18 +121,18 @@
             this.btnCreateChart_Click.Name = "btnCreateChart_Click";
             this.btnCreateChart_Click.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnCreateChart_Click_Click);
             // 
+            // btnEditWithChartMaker
+            // 
+            this.btnEditWithChartMaker.Label = "Edit Chart";
+            this.btnEditWithChartMaker.Name = "btnEditWithChartMaker";
+            this.btnEditWithChartMaker.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnEditWithChartMaker_ClickAsync);
+            // 
             // tab1
             // 
             this.tab1.ControlId.ControlIdType = Microsoft.Office.Tools.Ribbon.RibbonControlIdType.Office;
             this.tab1.Groups.Add(this.group1);
             this.tab1.Label = "TabAddIns";
             this.tab1.Name = "tab1";
-            // 
-            // btnEditWithChartMaker
-            // 
-            this.btnEditWithChartMaker.Label = "Edit Chart";
-            this.btnEditWithChartMaker.Name = "btnEditWithChartMaker";
-            this.btnEditWithChartMaker.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnEditWithChartMaker_Click);
             // 
             // Ribbon1
             // 
@@ -147,6 +147,8 @@
             this.ResumeLayout(false);
 
         }
+
+
 
         #endregion
 

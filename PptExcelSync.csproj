@@ -286,6 +286,7 @@
     can be found.
   -->
   <ItemGroup>
+    <Compile Include="DatasetCache.cs" />
     <Compile Include="DatasetManager.cs" />
     <Compile Include="DatasetMetadata.cs" />
     <Compile Include="Pivot.cs">

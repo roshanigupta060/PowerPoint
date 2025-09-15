@@ -1,4 +1,5 @@
-﻿using Microsoft.Office.Tools.Ribbon;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using Microsoft.Office.Tools.Ribbon;
 using NCalc;
 using Newtonsoft.Json;
 using System;
@@ -10,10 +11,12 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
+using System.Threading.Tasks;
 using System.Web;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 using System.Windows.Forms.VisualStyles;
+using Color = System.Drawing.Color;
 using DataTable = System.Data.DataTable;
 using Excel = Microsoft.Office.Interop.Excel;
 using MessageBox = System.Windows.Forms.MessageBox;
@@ -361,22 +364,23 @@ namespace PptExcelSync
                 string chartType =  form.SelectedChartType.ToString();
 
                 if(chartType != "0")
-                  InsertPivotChartIntoPowerPoint(pivot, form.SelectedChartType, rules);
+                  InsertPivotChartIntoPowerPoint(pivot, form.SelectedChartType, form, rules);
                 else
-                  InsertTableIntoPowerPoint(pivot, 25, rules);
+                  InsertTableIntoPowerPoint(pivot, 25, form, rules);
             }
         }
 
-        private Dictionary<string, string> ConvertFilters(List<FilterRule> savedFilters)
+
+        private Dictionary<string, string> ConvertFilters(Dictionary<string, string> savedFilters)
         {
             var dict = new Dictionary<string, string>();
             if (savedFilters != null)
             {
                 foreach (var f in savedFilters)
                 {
-                    if (!string.IsNullOrWhiteSpace(f.Column) && !string.IsNullOrWhiteSpace(f.Value))
+                    if (!string.IsNullOrWhiteSpace(f.Key) && !string.IsNullOrWhiteSpace(f.Value))
                     {
-                        dict[f.Column] = f.Value;
+                        dict[f.Value] = f.Value;
                     }
                 }
             }
@@ -452,7 +456,7 @@ namespace PptExcelSync
             return pivot;
         }
 
-        public void InsertTableIntoPowerPoint(DataTable pivotTable, float fontSize, List<ConditionalRule> rules = null)
+        public void InsertTableIntoPowerPoint(DataTable pivotTable, float fontSize, Pivot form, List<ConditionalRule> rules = null)
         {
             try
             {
@@ -467,7 +471,8 @@ namespace PptExcelSync
                 // Insert as table
                 int rows = pivotTable.Rows.Count + 1;
                 int cols = pivotTable.Columns.Count;
-                var table = slide.Shapes.AddTable(rows, cols, 50, 50, 600, 20 * rows).Table;
+                var tableShape = slide.Shapes.AddTable(rows, cols, 50, 50, 600, 20 * rows);
+                var table = tableShape.Table;
 
                 // Write headers
                 for (int c = 0; c < cols; c++)
@@ -498,6 +503,14 @@ namespace PptExcelSync
                         }
                     }
                 }
+
+                // ✅ Save metadata (same as chart)
+                PivotConfig config = form.GetConfig();
+                string json = JsonConvert.SerializeObject(config);
+                tableShape.Tags.Add("ChartMakerMeta", json);
+
+                // Optional: visible in PowerPoint’s Alt Text UI
+                tableShape.AlternativeText = "ChartMaker|" + config.DatasetPath;
             }
             catch (Exception ex)
             {
@@ -505,7 +518,7 @@ namespace PptExcelSync
             }
         }
 
-        public void InsertPivotChartIntoPowerPoint(DataTable pivotTable, Office.XlChartType chartType,List<ConditionalRule> rules = null)
+        public void InsertPivotChartIntoPowerPoint(DataTable pivotTable, Office.XlChartType chartType, Pivot form,List<ConditionalRule> rules = null)
         {
             try
             {
@@ -584,14 +597,6 @@ namespace PptExcelSync
                 // Hide Excel so user doesn’t see embedded sheet
                 sheet.Application.Visible = false;
 
-                // assume `chartShape` is the PowerPoint.Shape you created and `config` is the PivotConfig you used
-               PivotConfig config = new PivotConfig();
-                string json = JsonConvert.SerializeObject(config);
-                chartShape.Tags.Add("ChartMakerMeta", json);
-
-                // Optional: set alt text too (visible in PowerPoint UI)
-                chartShape.AlternativeText = "ChartMaker|" + config.DatasetPath;
-
                 // --- Apply conditional formatting ---
 
                 if (rules != null)
@@ -627,6 +632,13 @@ namespace PptExcelSync
                     }
                 }
 
+                // assume `chartShape` is the PowerPoint.Shape you created and `config` is the PivotConfig you used
+                PivotConfig config = form.GetConfig();
+                string json = JsonConvert.SerializeObject(config);
+                chartShape.Tags.Add("ChartMakerMeta", json);
+
+                // Optional: set alt text too (visible in PowerPoint UI)
+                chartShape.AlternativeText = "ChartMaker|" + config.DatasetPath;
             }
             catch (Exception ex)
             {
@@ -647,19 +659,23 @@ namespace PptExcelSync
             }
         }
 
-        private void btnEditWithChartMaker_Click(object sender, RibbonControlEventArgs e)
+        private async void btnEditWithChartMaker_ClickAsync(object sender, RibbonControlEventArgs e)
         {
-            try
+            try    
             {
                 var app = Globals.ThisAddIn.Application;
-                if (app.ActiveWindow == null || app.ActiveWindow.Selection == null ||
-                    app.ActiveWindow.Selection.Type != PowerPoint.PpSelectionType.ppSelectionShapes)
+
+                // ✅ Step 1: Ensure user selected a shape
+                if ( app.ActiveWindow == null || app.ActiveWindow.Selection == null ||
+                    app.ActiveWindow.Selection.Type == PowerPoint.PpSelectionType.ppSelectionNone)
                 {
                     MessageBox.Show("Please select a chart or table shape to edit.");
                     return;
                 }
 
                 var shape = app.ActiveWindow.Selection.ShapeRange[1];
+
+                // ✅ Step 2: Get config metadata from shape
                 string metaJson = shape.Tags["ChartMakerMeta"];
                 if (string.IsNullOrEmpty(metaJson))
                 {
@@ -667,56 +683,73 @@ namespace PptExcelSync
                     return;
                 }
 
-                string filePath = ddlDatasets.SelectedItem.Tag.ToString();
-                var dt = new DatasetManager().LoadExcel(filePath);
-                // Show Pivot dialog
-                var form = new Pivot(dt, filePath);
-                var newConfig = form.GetConfig();
+                // ✅ Step 3: Deserialize old config
+                var oldConfig = JsonConvert.DeserializeObject<PivotConfig>(metaJson);
 
-                //var config = JsonConvert.DeserializeObject<PivotConfig>(metaJson);
-
-                if (string.IsNullOrEmpty(newConfig.DatasetPath) || !File.Exists(newConfig.DatasetPath))
+                if (string.IsNullOrEmpty(oldConfig.DatasetPath) || !File.Exists(oldConfig.DatasetPath))
                 {
                     MessageBox.Show("Dataset file not found. Please re-select the Excel file.");
                     return;
                 }
 
+                // ✅ Step 4: Reload dataset
+                // var dt = new DatasetManager().LoadExcel(oldConfig.DatasetPath);
+
+                var dt = await Task.Run(() => DatasetCache.GetOrLoad(oldConfig.DatasetPath));
 
 
-                // Load dataset and apply any calculated fields (DatasetManager should handle metadata)
-                //var dt = new DatasetManager().LoadExcel(config.DatasetPath);
-
-                // Reapply any calculated fields included directly in the config (optional):
+                // ✅ Step 5: Reapply calculated fields (if missing in DataTable)
                 var ph = new PivotHelper();
-                if (newConfig.CalculatedFields != null)
+                if (oldConfig.CalculatedFields != null)
                 {
-                    foreach (var cf in newConfig.CalculatedFields)
+                    foreach (var cf in oldConfig.CalculatedFields)
                     {
                         if (!dt.Columns.Contains(cf.FieldName))
                             ph.AddCalculatedField(dt, cf.FieldName, cf.Formula);
                     }
                 }
 
-                // Open Pivot form pre-filled
-    
-                    form.LoadConfig(newConfig); // method you will implement in Pivot form
-                    if (form.ShowDialog() == DialogResult.OK)
+                // ✅ Step 6: Open Pivot form with pre-filled config
+                var form = new Pivot(dt, oldConfig.DatasetPath);
+                form.LoadConfig(oldConfig);
+
+                if (form.ShowDialog() == DialogResult.OK)
+                {
+                    // User updated config → collect latest
+                    var newConfig = form.GetConfig();
+
+                    // Build new pivot
+                    var newPivot = CreatePivot(dt,
+                        newConfig.RowField, newConfig.ValueFields,
+                        newConfig.Aggregations, newConfig.Filters
+                    );
+
+                    var rule = form.GetConditionalRules();
+
+                    // ✅ Step 7: Update existing shape in-place
+                    if (shape.Type == Office.MsoShapeType.msoChart)
                     {
-                        // user updated config in UI; collect the new config and rebuild
-                       // var newConfig = form.GetConfig(); // method returns PivotConfig
-                        var newPivot = CreatePivot(dt, newConfig.RowField, newConfig.ValueFields, newConfig.Aggregations, ConvertFilters(newConfig.Filters));
-
-                        // Update the existing shape in-place
-                        if (shape.Type == Office.MsoShapeType.msoChart)
-                            UpdatePivotChartInPowerPoint(shape, newPivot, newConfig);
-                        else if (shape.HasTable == Office.MsoTriState.msoTrue)
-                            UpdatePivotTableInPowerPoint(shape, newPivot, newConfig);
-
-                        // Update the shape tag with the new config
+                        UpdatePivotChartInPowerPoint(shape, newPivot, newConfig);
+                    }
+                    else if (shape.HasTable == Office.MsoTriState.msoTrue)
+                    {
+                        try { UpdatePivotTableInPowerPoint(shape, newPivot, newConfig);}
+                        catch(Exception ex)
+                        {
+                            MessageBox.Show("Edit failed: " + ex.Message);
+                        }
+                        
+                    }
+                    try
+                    {// ✅ Step 8: Save new config back into shape tag
                         shape.Tags.Delete("ChartMakerMeta");
                         shape.Tags.Add("ChartMakerMeta", JsonConvert.SerializeObject(newConfig));
                     }
-                
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Edit failed: " + ex.Message);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -724,16 +757,20 @@ namespace PptExcelSync
             }
         }
 
-        public void UpdatePivotChartInPowerPoint(PowerPoint.Shape chartShape, DataTable pivotTable, PivotConfig config)
+        public void UpdatePivotChartInPowerPoint(PowerPoint.Shape chartShape,DataTable pivotTable, PivotConfig config)
         {
             Excel.Workbook workbook = null;
             Excel.Worksheet sheet = null;
+            var chart = chartShape.Chart;
+
             try
             {
-                var chart = chartShape.Chart;
-                // Access embedded workbook & worksheet
+                // Obtain workbook & sheet for the embedded chart
+                // NOTE: chart.ChartData.Workbook is accessible; we try to use it without showing Excel UI.
                 workbook = chart.ChartData.Workbook;
                 sheet = (Excel.Worksheet)workbook.Worksheets[1];
+
+                // Clear existing sheet content
                 sheet.Cells.Clear();
 
                 int rows = pivotTable.Rows.Count;
@@ -743,54 +780,79 @@ namespace PptExcelSync
                 for (int c = 0; c < cols; c++)
                     sheet.Cells[1, c + 1] = pivotTable.Columns[c].ColumnName;
 
-                // Write data
+                // Write data rows
                 for (int r = 0; r < rows; r++)
+                {
                     for (int c = 0; c < cols; c++)
-                        sheet.Cells[r + 2, c + 1] = pivotTable.Rows[r][c];
+                    {
+                        sheet.Cells[r + 2, c + 1] = pivotTable.Rows[r][c] ?? "";
+                    }
+                }
 
-                // Build full range and set source
+                // Build Excel range and address string (sheetName!'A1:D5')
                 Excel.Range fullRange = sheet.Range[sheet.Cells[1, 1], sheet.Cells[rows + 1, cols]];
-                // Use address approach to be safe
-                string addr = sheet.Name + "!" + fullRange.Address[false, false];
-                chart.SetSourceData(addr, Excel.XlRowCol.xlColumns);
+                string addr = fullRange.Address[false, false, Excel.XlReferenceStyle.xlA1]; // e.g. A1:D5
+                string sourceString = $"'{sheet.Name}'!{addr}";
 
+                // QUICK TRY: try setting source directly (works in many cases)
+                try
+                {
+                    chart.SetSourceData(sourceString, Excel.XlRowCol.xlColumns);
+                }
+                catch (COMException)
+                {
+                    // If PowerPoint refuses, activate the ChartData workbook (this will open Excel UI briefly),
+                    // then try again and close workbook afterward.
+                    chart.ChartData.Activate();
+                    workbook = chart.ChartData.Workbook; // refresh reference after activate
+                    sheet = (Excel.Worksheet)workbook.Worksheets[1];
+
+                    // Recompute in case Activate changed anything
+                    fullRange = sheet.Range[sheet.Cells[1, 1], sheet.Cells[rows + 1, cols]];
+                    addr = fullRange.Address[false, false, Excel.XlReferenceStyle.xlA1];
+                    sourceString = $"'{sheet.Name}'!{addr}";
+
+                    chart.SetSourceData(sourceString, Excel.XlRowCol.xlColumns);
+                }
+
+                // Ensure chart plots columns as series
                 chart.PlotBy = PowerPoint.XlRowCol.xlColumns;
 
-                // rename series to pivot headers (skip category col at index 0)
-                for (int s = 2; s <= cols; s++)
+                // OPTIONAL: rename series to match pivot column headers (skip category column at index 0)
+                try
                 {
-                    int seriesIndex = s - 1; // series index is 1-based and usually corresponds
-                    try
+                    for (int s = 2; s <= cols; s++)
                     {
+                        int seriesIndex = s - 1; // first series is index 1
                         var series = chart.SeriesCollection(seriesIndex);
                         series.Name = pivotTable.Columns[s - 1].ColumnName;
                     }
-                    catch { /* ignore if series doesn't exist yet */ }
                 }
+                catch { /* ignore if mismatch */ }
 
-                // Refresh chart
-                // don't call chart.ChartData.Activate(); that shows Excel UI
-                workbook.Application.CalculateFull();
+                // Refresh chart to commit changes
                 chart.Refresh();
 
-                // Apply conditional formatting rules per point (use pivotTable to map)
+                // Apply conditional formatting if provided (map series -> pivot columns)
                 if (config?.ConditionalRules != null && config.ConditionalRules.Any())
                 {
                     for (int s = 1; s <= chart.SeriesCollection().Count; s++)
                     {
                         var series = chart.SeriesCollection(s);
-                        string seriesName = series.Name;
+                        string seriesName = series.Name ?? "";
+
                         for (int p = 1; p <= series.Points().Count; p++)
                         {
                             int dataRowIndex = p - 1;
-                            int dataColIndex = s; // series s maps to pivotTable column s (assuming col0=category)
+                            int dataColIndex = s; // series s corresponds to pivotTable column s (col0 = category)
+
                             if (dataRowIndex < pivotTable.Rows.Count && dataColIndex < pivotTable.Columns.Count)
                             {
-                                if (double.TryParse(pivotTable.Rows[dataRowIndex][dataColIndex].ToString(), out var pointVal))
+                                if (double.TryParse(pivotTable.Rows[dataRowIndex][dataColIndex]?.ToString(), out var pointVal))
                                 {
                                     foreach (var rule in config.ConditionalRules)
                                     {
-                                        if (seriesName.Contains(rule.Field) && Applies(pointVal,rule))
+                                        if (seriesName.Contains(rule.Field) && Applies(pointVal, rule))
                                         {
                                             series.Points(p).Format.Fill.ForeColor.RGB = ColorTranslator.ToOle(rule.Color);
                                         }
@@ -799,62 +861,88 @@ namespace PptExcelSync
                             }
                         }
                     }
+
+                    chart.Refresh();
                 }
+
+                // Close the embedded workbook (non-modal) and release COMs
+                try
+                {
+                    workbook.Close(false);
+                }
+                catch { /* ignore errors closing embedded workbook */ }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show("Error updating chart: " + ex.Message);
             }
             finally
             {
-                // Close/hide workbook and release COM
+                // Safe COM clean-up
+                if (sheet != null)
+                {
+                    try { Marshal.ReleaseComObject(sheet); } catch { }
+                }
                 if (workbook != null)
                 {
-                    try { workbook.Close(false); } catch { }
-                    Marshal.ReleaseComObject(sheet);
-                    Marshal.ReleaseComObject(workbook);
+                    try { Marshal.ReleaseComObject(workbook); } catch { }
                 }
+                // hint GC for final cleanup
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
             }
         }
-
-        public void UpdatePivotTableInPowerPoint(PowerPoint.Shape tableShape, DataTable pivotTable, PivotConfig config)
+        public PowerPoint.Shape UpdatePivotTableInPowerPoint(
+     PowerPoint.Shape tableShape,
+     DataTable pivotTable,
+     PivotConfig config)
         {
+            PowerPoint.Shape newShape = tableShape;
+
             try
             {
-                if (tableShape.HasTable != Office.MsoTriState.msoTrue) return;
-                var table = tableShape.Table;
-                int rows = pivotTable.Rows.Count + 1;
+                if (tableShape.HasTable != Office.MsoTriState.msoTrue) return tableShape;
+
+                var slide = (PowerPoint.Slide)tableShape.Parent;
+                float left = tableShape.Left, top = tableShape.Top, w = tableShape.Width, h = tableShape.Height;
+
+                int rows = pivotTable.Rows.Count + 1; // header + data rows
                 int cols = pivotTable.Columns.Count;
 
-                // Optionally, rebuild if table size mismatches: delete & recreate, or resize shape.Table if possible.
-                // Here we'll assume size matches or recreate if necessary:
+                var table = tableShape.Table;
+
+                // 🔹 Rebuild table if dimension mismatch
                 if (table.Rows.Count != rows || table.Columns.Count != cols)
                 {
-                    // remove existing and add new table (simple approach)
-                    var slide = tableShape.Parent as PowerPoint.Slide;
-                    var left = tableShape.Left; var top = tableShape.Top; var w = tableShape.Width; var h = tableShape.Height;
                     tableShape.Delete();
-                    var newShape = slide.Shapes.AddTable(rows, cols, left, top, w, h);
+                    newShape = slide.Shapes.AddTable(rows, cols, left, top, w, h);
                     table = newShape.Table;
-                    tableShape = newShape;
                 }
 
-                // Write headers
+                // --- Write headers ---
                 for (int c = 0; c < cols; c++)
-                    table.Cell(1, c + 1).Shape.TextFrame.TextRange.Text = pivotTable.Columns[c].ColumnName;
+                {
+                    var headerCell = table.Cell(1, c + 1);
+                    headerCell.Shape.TextFrame.TextRange.Text = pivotTable.Columns[c].ColumnName;
+                    headerCell.Shape.TextFrame.TextRange.Font.Bold = Microsoft.Office.Core.MsoTriState.msoTrue;
+                    headerCell.Shape.TextFrame.TextRange.ParagraphFormat.Alignment =
+                        PowerPoint.PpParagraphAlignment.ppAlignCenter;
+                }
 
-                // Write values and conditional formatting
+                // --- Write values + conditional formatting ---
                 for (int r = 0; r < pivotTable.Rows.Count; r++)
                 {
                     for (int c = 0; c < cols; c++)
                     {
-                        var text = pivotTable.Rows[r][c]?.ToString() ?? "";
+                        string text = pivotTable.Rows[r][c]?.ToString() ?? "";
                         var cell = table.Cell(r + 2, c + 1);
                         cell.Shape.TextFrame.TextRange.Text = text;
 
-                        // conditional format
-                        if (config?.ConditionalRules != null)
+                        if (config?.ConditionalRules != null && double.TryParse(text, out var val))
                         {
                             foreach (var rule in config.ConditionalRules)
                             {
-                                if (pivotTable.Columns[c].ColumnName.Contains(rule.Field)
-                                    && double.TryParse(text, out var v) && Applies(v, rule))
+                                if (pivotTable.Columns[c].ColumnName.Contains(rule.Field) && Applies(val, rule))
                                 {
                                     cell.Shape.Fill.ForeColor.RGB = ColorTranslator.ToOle(rule.Color);
                                 }
@@ -863,13 +951,39 @@ namespace PptExcelSync
                     }
                 }
 
-                // Update tag on the shape
-                tableShape.Tags.Delete("ChartMakerMeta");
-                tableShape.Tags.Add("ChartMakerMeta", JsonConvert.SerializeObject(config));
+                // --- Auto-fit column widths ---
+                float totalWidth = newShape.Width;
+                float[] colWidths = new float[cols];
+                float minColWidth = 40f;
+
+                for (int c = 0; c < cols; c++)
+                {
+                    int maxLen = pivotTable.Columns[c].ColumnName.Length;
+                    foreach (DataRow row in pivotTable.Rows)
+                    {
+                        int len = row[c]?.ToString()?.Length ?? 0;
+                        if (len > maxLen) maxLen = len;
+                    }
+                    colWidths[c] = Math.Max(minColWidth, maxLen * 7f);
+                }
+
+                float scale = totalWidth / colWidths.Sum();
+                for (int c = 0; c < cols; c++)
+                {
+                    table.Columns[c + 1].Width = colWidths[c] * scale;
+                }
+
+                // --- ✅ Update tag + alt text ---
+                newShape.Tags.Delete("ChartMakerMeta");
+                newShape.Tags.Add("ChartMakerMeta", JsonConvert.SerializeObject(config));
+                newShape.AlternativeText = "ChartMaker|" + config.DatasetPath;
+
+                return tableShape;
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error updating table: " + ex.Message);
+                return tableShape;
             }
         }
 
