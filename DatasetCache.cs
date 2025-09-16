@@ -16,7 +16,7 @@ namespace PptExcelSync
             if (_cache.ContainsKey(path))
                 return _cache[path];
 
-            var dt = new DatasetManager().LoadExcel(path);
+            var dt = new DatasetManager().LoadDataset(path);
             _cache[path] = dt;
             return dt;
         }

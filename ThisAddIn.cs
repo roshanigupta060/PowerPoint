@@ -14,7 +14,8 @@ namespace PptExcelSync
     {
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
-            this.Application.WindowBeforeRightClick += App_WindowBeforeRightClick;
+            this.Application.WindowBeforeDoubleClick += Application_WindowBeforeRightClick;
+            this.Application.WindowBeforeRightClick += Application_WindowBeforeRightClick;
             this.Application.WindowSelectionChange += Application_WindowSelectionChange;
         }
 
@@ -40,39 +41,55 @@ namespace PptExcelSync
             catch { }
         }
 
-        private void App_WindowBeforeRightClick(PowerPoint.Selection Sel, ref bool Cancel)
+        private void Application_WindowBeforeRightClick(PowerPoint.Selection Sel, ref bool Cancel)
         {
+
+   
+
             try
             {
-                if (Sel.Type == PowerPoint.PpSelectionType.ppSelectionShapes)
+               // if (Sel.Type == PowerPoint.PpSelectionType.ppSelectionShapes)
                 {
                     var shape = Sel.ShapeRange[1];
                     bool hasMeta = !string.IsNullOrEmpty(shape.Tags["ChartMakerMeta"]);
 
                     if (hasMeta)
                     {
-                        // Cancel the default PPT context menu
-                        Cancel = true;
+                        var commandBars = Globals.ThisAddIn.Application.CommandBars;
 
-                        // Show custom menu on UI thread
-                        System.Windows.Forms.ContextMenuStrip menu = new System.Windows.Forms.ContextMenuStrip();
+                        // Try multiple menus
+                        Office.CommandBar contextMenu = null;
+                        if (shape.HasTable == Office.MsoTriState.msoTrue)
+                            contextMenu = commandBars["Table Context Menu"];
+                        else
+                            contextMenu = commandBars["Shape"];
 
-                        var editItem = new ToolStripMenuItem("Edit with ChartMaker");
-                        editItem.Click += (s, e) => EditSelectedShapeWithChartMaker(shape);
-                        menu.Items.Add(editItem);
+                        if (contextMenu == null) return;
 
-                        // Get cursor position in screen coordinates
-                        var pos = System.Windows.Forms.Cursor.Position;
+                        // Remove old copy
+                        foreach (Office.CommandBarControl ctrl in contextMenu.Controls)
+                        {
+                            if (ctrl.Caption == "Edit with ChartMaker")
+                            {
+                                ctrl.Delete();
+                                break;
+                            }
+                        }
 
-                        // Show menu (needs to be invoked on the WinForms thread)
-                        menu.Show(pos);
+                        // Add new
+                        var button = (Office.CommandBarButton)contextMenu.Controls.Add(
+                            Office.MsoControlType.msoControlButton,
+                            Temporary: true);
+
+                        button.Caption = "Edit with ChartMaker";
+                        button.Click += (Office.CommandBarButton Ctrl, ref bool CancelDefault) =>
+                        {
+                            EditSelectedShapeWithChartMaker(shape);
+                        };
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Context menu error: " + ex.Message);
-            }
+            catch { }
         }
 
         private void EditSelectedShapeWithChartMaker(PowerPoint.Shape shape)

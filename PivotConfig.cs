@@ -16,11 +16,20 @@ namespace PptExcelSync
         public List<CalculatedFieldInfo> CalculatedFields { get; set; } = new List<CalculatedFieldInfo>();
         public Dictionary<string, string>  Filters { get; set; } = new Dictionary<string, string>();
         public List<ConditionalRule> ConditionalRules { get; set; } = new List<ConditionalRule>();
+        public StyleConfig Styles { get; set; } = new StyleConfig();
     }
 
-    // Reuse the classes you already have (examples):
-    //public class CalculatedFieldInfo { public string FieldName { get; set; } public string Formula { get; set; } }
-    public class FilterRule { public string Column { get; set; } public string Value { get; set; } }
-    //public class ConditionalRule { public string Field { get; set; } public string Operator { get; set; } public double Threshold { get; set; } public Color Color { get; set; } public bool Applies(double v) { switch (Operator) { case ">": return v > Threshold; case "<": return v < Threshold; case ">=": return v >= Threshold; case "<=": return v <= Threshold; case "=": return v == Threshold; default: return false; } } }
+    public class StyleConfig
+    {
+        // Table styles
+        public float TableFontSize { get; set; } = 12;
+        public string TableFontName { get; set; } = "Calibri";
+        public int TableHeaderColor { get; set; } = System.Drawing.Color.LightGray.ToArgb();
 
+        // Chart styles
+        public bool ShowLegend { get; set; } = true;
+        public bool ShowTitle { get; set; } = true;
+        public string TitleText { get; set; } = "Pivot Chart";
+        public int[] SeriesColors { get; set; } // optional: custom series colors
+    }
 }

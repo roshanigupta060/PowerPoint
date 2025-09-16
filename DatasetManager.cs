@@ -48,6 +48,69 @@ namespace PptExcelSync
             }
             return dt;
         }
+
+        private DataTable LoadCsv(string filePath)
+        {
+            var dt = new DataTable();
+
+            using (var reader = new StreamReader(filePath))
+            {
+                bool isFirstRow = true;
+                while (!reader.EndOfStream)
+                {
+                    var line = reader.ReadLine();
+                    var values = line.Split(',');
+
+                    if (isFirstRow)
+                    {
+                        foreach (var col in values)
+                            dt.Columns.Add(col.Trim());
+                        isFirstRow = false;
+                    }
+                    else
+                    {
+                        dt.Rows.Add(values);
+                    }
+                }
+            }
+
+            return dt;
+        }
+
+        public DataTable LoadDataset(string filePath)
+        {
+            string ext = Path.GetExtension(filePath).ToLower();
+
+            if (ext == ".csv")
+                return LoadCsv(filePath);
+            else if (ext == ".xlsx" || ext == ".xls")
+                return LoadExcel(filePath);
+            else
+                throw new NotSupportedException($"Unsupported file type: {ext}");
+        }
+
+        public DataTable LoadDatasets(List<string> filePaths)
+        {
+            DataTable merged = null;
+
+            foreach (var filePath in filePaths)
+            {
+                var dt = LoadDataset(filePath);
+
+                // Ensure we have a Source column
+                if (!dt.Columns.Contains("Source"))
+                    dt.Columns.Add("Source", typeof(string));
+
+                foreach (DataRow row in dt.Rows)
+                    row["Source"] = Path.GetFileNameWithoutExtension(filePath);
+
+                if (merged == null)
+                    merged = dt.Clone(); // copy structure
+                merged.Merge(dt);
+            }
+
+            return merged;
+        }
     }
 
 }
