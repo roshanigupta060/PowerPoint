@@ -111,6 +111,66 @@ namespace PptExcelSync
 
             return merged;
         }
-    }
 
+        public DataTable LoadAndMergeDatasets(IEnumerable<string> filePaths)
+        {
+            var merged = new DataTable();
+
+            // Keep track of column order and set
+            var columnSet = new List<string>((IEnumerable<string>)StringComparer.OrdinalIgnoreCase);
+
+            // Read each file into a DataTable
+            var tables = new List<DataTable>();
+
+            foreach (var path in filePaths)
+            {
+                if (!File.Exists(path)) continue;
+
+                DataTable dt;
+                var ext = Path.GetExtension(path).ToLowerInvariant();
+                if (ext == ".csv")
+                    dt = LoadCsv(path);
+                else // assume Excel
+                    dt = LoadExcel(path);
+
+                if (dt == null || dt.Columns.Count == 0) continue;
+
+                tables.Add(dt);
+
+                // union columns
+                foreach (DataColumn c in dt.Columns)
+                {
+                    if (!columnSet.Contains(c.ColumnName, StringComparer.OrdinalIgnoreCase))
+                        columnSet.Add(c.ColumnName);
+                }
+            }
+
+            // Build merged DataTable with union columns plus 'Source'
+            foreach (var colName in columnSet)
+                merged.Columns.Add(colName, typeof(string));
+
+            // Add Source column at end
+            merged.Columns.Add("Source", typeof(string));
+
+            // Append rows from each table
+            for (int i = 0; i < tables.Count; i++)
+            {
+                var dt = tables[i];
+                var source = Path.GetFileNameWithoutExtension(filePaths.ElementAt(i));
+                foreach (DataRow r in dt.Rows)
+                {
+                    var nr = merged.NewRow();
+                    foreach (DataColumn c in dt.Columns)
+                    {
+                        nr[c.ColumnName] = r[c]?.ToString() ?? "";
+                    }
+                    nr["Source"] = source;
+                    merged.Rows.Add(nr);
+                }
+            }
+
+            return merged;
+        }
+
+    }
 }

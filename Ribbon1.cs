@@ -362,7 +362,10 @@ namespace PptExcelSync
                 }
 
                 var filters = form.GetFilters();
-                var pivot = CreatePivot(dt, form.SelectedRowField, form.SelectedValueFields, form.SelectedAggregations, filters);
+                string columnField = form.columnField;
+                if (columnField == "-- none --") columnField = null;
+
+                var pivot = CreatePivot(dt, form.SelectedRowField, form.SelectedValueFields, form.SelectedAggregations, columnField, filters);
 
                 // ⬇️ Get rules from the form
                 var rules = form.GetConditionalRules();
@@ -394,74 +397,196 @@ namespace PptExcelSync
             return dict;
         }
 
-
-        public DataTable CreatePivot(DataTable dt,string rowField, List<string> valueFields, List<string> aggFuncs,
-              Dictionary<string, string> filters = null)
+        public DataTable CreatePivot(
+            
+    DataTable dt,
+    string rowField,
+    List<string> valueFields,
+    List<string> aggFuncs,
+    string columnField = null,
+    Dictionary<string, string> filters = null)
         {
-            // --- Step 1: Apply filters if provided ---
-            IEnumerable<DataRow> query = dt.AsEnumerable();
+            if (dt == null) throw new ArgumentNullException(nameof(dt));
+            if (string.IsNullOrEmpty(rowField)) throw new ArgumentNullException(nameof(rowField));
+
+            // --- Step 1: Apply filters if any ---
+            IEnumerable<DataRow> rowsQuery = dt.AsEnumerable();
             if (filters != null && filters.Any())
             {
                 foreach (var f in filters)
-                {
-                    string col = f.Key;
-                    string val = f.Value;
-
-                    query = query.Where(r => r[col]?.ToString() == val);
-                }
+                    rowsQuery = rowsQuery.Where(r => r[f.Key]?.ToString() == f.Value);
             }
 
-            // --- Step 2: Group by row field ---
-            var grouped = query.GroupBy(r => r[rowField].ToString());
-
-            // --- Step 3: Build output table ---
-            DataTable pivot = new DataTable();
-            pivot.Columns.Add(rowField, typeof(string));
-
-            // Add output columns for each (aggregation + value field) combination
-            foreach (var valField in valueFields)
+            // If columnField is null or empty => simple pivot (one column per agg/value)
+            if (string.IsNullOrEmpty(columnField))
             {
-                foreach (var agg in aggFuncs)
+                var grouped = rowsQuery.GroupBy(r => r[rowField].ToString());
+                var pivot = new DataTable();
+                pivot.Columns.Add(rowField, typeof(string));
+                foreach (var valField in valueFields)
+                    foreach (var agg in aggFuncs)
+                        pivot.Columns.Add($"{agg} of {valField}", typeof(double));
+
+                foreach (var g in grouped)
                 {
-                    pivot.Columns.Add($"{agg} of {valField}", typeof(double));
+                    var nr = pivot.NewRow();
+                    nr[rowField] = g.Key;
+                    foreach (var valField in valueFields)
+                    {
+                        var numbers = g.Select(r => {
+                            double v; return double.TryParse(r[valField]?.ToString(), out v) ? v : 0;
+                        }).ToList();
+
+                        foreach (var agg in aggFuncs)
+                        {
+                            double result = 0;
+                            switch (agg.ToLower())
+                            {
+                                case "sum": result = numbers.Sum(); break;
+                                case "average": result = numbers.Any() ? numbers.Average() : 0; break;
+                                case "count": result = g.Count(); break;
+                                case "max": result = numbers.Any() ? numbers.Max() : 0; break;
+                                case "min": result = numbers.Any() ? numbers.Min() : 0; break;
+                            }
+                            nr[$"{agg} of {valField}"] = result;
+                        }
+                    }
+                    pivot.Rows.Add(nr);
                 }
+                return pivot;
             }
 
-            // --- Step 4: Fill data ---
-            foreach (var g in grouped)
-            {
-                var row = pivot.NewRow();
-                row[rowField] = g.Key;
+            // --- columnField present (YoY/multi-file) ---
+            // Determine distinct column groups (for example: "2023","2024" or file names)
+            var distinctColValues = rowsQuery
+                .Select(r => r[columnField]?.ToString() ?? "")
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
 
+            // Build pivot columns: RowField + for each columnValue * (for each valueField * agg)
+            var pivot2 = new DataTable();
+            pivot2.Columns.Add(rowField, typeof(string));
+
+            foreach (var colVal in distinctColValues)
+            {
                 foreach (var valField in valueFields)
                 {
-                    var numbers = g.Select(r =>
-                    {
-                        double val;
-                        return double.TryParse(r[valField].ToString(), out val) ? val : 0;
-                    });
-
                     foreach (var agg in aggFuncs)
                     {
-                        double result = 0;
-                        switch (agg.ToLower())
-                        {
-                            case "sum": result = numbers.Sum(); break;
-                            case "average": result = numbers.Any() ? numbers.Average() : 0; break;
-                            case "count": result = g.Count(); break;
-                            case "max": result = numbers.Any() ? numbers.Max() : 0; break;
-                            case "min": result = numbers.Any() ? numbers.Min() : 0; break;
-                        }
+                        // Include the column value in the header for clarity
+                        pivot2.Columns.Add($"{agg} of {valField} [{colVal}]", typeof(double));
+                    }
+                }
+            }
 
-                        row[$"{agg} of {valField}"] = result;
+            // Group by row field only, then compute for each distinct columnValue separately
+            var groupedRows = rowsQuery.GroupBy(r => r[rowField].ToString());
+            foreach (var g in groupedRows)
+            {
+                var nr = pivot2.NewRow();
+                nr[rowField] = g.Key;
+
+                foreach (var colVal in distinctColValues)
+                {
+                    // rows inside this row group and this column group
+                    var rowsInBucket = g.Where(r => (r[columnField]?.ToString() ?? "") == colVal).ToList();
+
+                    foreach (var valField in valueFields)
+                    {
+                        var numbers = rowsInBucket.Select(r => {
+                            double v; return double.TryParse(r[valField]?.ToString(), out v) ? v : 0;
+                        }).ToList();
+
+                        foreach (var agg in aggFuncs)
+                        {
+                            double result = 0;
+                            switch (agg.ToLower())
+                            {
+                                case "sum": result = numbers.Sum(); break;
+                                case "average": result = numbers.Any() ? numbers.Average() : 0; break;
+                                case "count": result = rowsInBucket.Count; break;
+                                case "max": result = numbers.Any() ? numbers.Max() : 0; break;
+                                case "min": result = numbers.Any() ? numbers.Min() : 0; break;
+                            }
+                            nr[$"{agg} of {valField} [{colVal}]"] = result;
+                        }
                     }
                 }
 
-                pivot.Rows.Add(row);
+                pivot2.Rows.Add(nr);
             }
 
-            return pivot;
+            return pivot2;
         }
+
+        //public DataTable CreatePivot(DataTable dt,string rowField, List<string> valueFields, List<string> aggFuncs,
+        //      Dictionary<string, string> filters = null)
+        //{
+        //    // --- Step 1: Apply filters if provided ---
+        //    IEnumerable<DataRow> query = dt.AsEnumerable();
+        //    if (filters != null && filters.Any())
+        //    {
+        //        foreach (var f in filters)
+        //        {
+        //            string col = f.Key;
+        //            string val = f.Value;
+
+        //            query = query.Where(r => r[col]?.ToString() == val);
+        //        }
+        //    }
+
+        //    // --- Step 2: Group by row field ---
+        //    var grouped = query.GroupBy(r => r[rowField].ToString());
+
+        //    // --- Step 3: Build output table ---
+        //    DataTable pivot = new DataTable();
+        //    pivot.Columns.Add(rowField, typeof(string));
+
+        //    // Add output columns for each (aggregation + value field) combination
+        //    foreach (var valField in valueFields)
+        //    {
+        //        foreach (var agg in aggFuncs)
+        //        {
+        //            pivot.Columns.Add($"{agg} of {valField}", typeof(double));
+        //        }
+        //    }
+
+        //    // --- Step 4: Fill data ---
+        //    foreach (var g in grouped)
+        //    {
+        //        var row = pivot.NewRow();
+        //        row[rowField] = g.Key;
+
+        //        foreach (var valField in valueFields)
+        //        {
+        //            var numbers = g.Select(r =>
+        //            {
+        //                double val;
+        //                return double.TryParse(r[valField].ToString(), out val) ? val : 0;
+        //            });
+
+        //            foreach (var agg in aggFuncs)
+        //            {
+        //                double result = 0;
+        //                switch (agg.ToLower())
+        //                {
+        //                    case "sum": result = numbers.Sum(); break;
+        //                    case "average": result = numbers.Any() ? numbers.Average() : 0; break;
+        //                    case "count": result = g.Count(); break;
+        //                    case "max": result = numbers.Any() ? numbers.Max() : 0; break;
+        //                    case "min": result = numbers.Any() ? numbers.Min() : 0; break;
+        //                }
+
+        //                row[$"{agg} of {valField}"] = result;
+        //            }
+        //        }
+
+        //        pivot.Rows.Add(row);
+        //    }
+
+        //    return pivot;
+        //}
 
         public void InsertTableIntoPowerPoint(DataTable pivotTable, float fontSize, Pivot form, List<ConditionalRule> rules = null)
         {
@@ -725,10 +850,13 @@ namespace PptExcelSync
                     // User updated config → collect latest
                     var newConfig = form.GetConfig();
 
+                    string columnField = form.columnField;
+                    if (columnField == "-- none --") columnField = null;
+
                     // Build new pivot
                     var newPivot = CreatePivot(dt,
                         newConfig.RowField, newConfig.ValueFields,
-                        newConfig.Aggregations, newConfig.Filters
+                        newConfig.Aggregations, columnField, newConfig.Filters
                     );
 
                     var rule = form.GetConditionalRules();

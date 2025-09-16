@@ -60,17 +60,26 @@ namespace PptExcelSync
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.grpFilters = new System.Windows.Forms.GroupBox();
-            this.label4 = new System.Windows.Forms.Label();
-            this.label9 = new System.Windows.Forms.Label();
-            this.cmbFilterField = new System.Windows.Forms.ComboBox();
-            this.cmbFilterValue = new System.Windows.Forms.ComboBox();
-            this.lstFilters = new System.Windows.Forms.ListBox();
-            this.btnAddFilter = new System.Windows.Forms.Button();
             this.btnRemoveFilter = new System.Windows.Forms.Button();
+            this.btnAddFilter = new System.Windows.Forms.Button();
+            this.lstFilters = new System.Windows.Forms.ListBox();
+            this.cmbFilterValue = new System.Windows.Forms.ComboBox();
+            this.cmbFilterField = new System.Windows.Forms.ComboBox();
+            this.label9 = new System.Windows.Forms.Label();
+            this.label4 = new System.Windows.Forms.Label();
+            this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.lblMergedPreview = new System.Windows.Forms.Label();
+            this.label10 = new System.Windows.Forms.Label();
+            this.cmbColumnField = new System.Windows.Forms.ComboBox();
+            this.btnMergeFiles = new System.Windows.Forms.Button();
+            this.btnRemoveFile = new System.Windows.Forms.Button();
+            this.lstDatasetFiles = new System.Windows.Forms.ListBox();
+            this.btnAddFiles = new System.Windows.Forms.Button();
             this.grpConditionalFormatting.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.grpFilters.SuspendLayout();
+            this.groupBox3.SuspendLayout();
             this.SuspendLayout();
             // 
             // lable1
@@ -319,7 +328,7 @@ namespace PptExcelSync
             this.groupBox1.Controls.Add(this.label6);
             this.groupBox1.Location = new System.Drawing.Point(12, 12);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(310, 127);
+            this.groupBox1.Size = new System.Drawing.Size(310, 136);
             this.groupBox1.TabIndex = 18;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Calculate Formula";
@@ -335,9 +344,9 @@ namespace PptExcelSync
             this.groupBox2.Controls.Add(this.label2);
             this.groupBox2.Controls.Add(this.clbValueFields);
             this.groupBox2.Controls.Add(this.label3);
-            this.groupBox2.Location = new System.Drawing.Point(660, 12);
+            this.groupBox2.Location = new System.Drawing.Point(340, 157);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(284, 311);
+            this.groupBox2.Size = new System.Drawing.Size(304, 308);
             this.groupBox2.TabIndex = 19;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Generate Chart/Table";
@@ -351,65 +360,12 @@ namespace PptExcelSync
             this.grpFilters.Controls.Add(this.cmbFilterField);
             this.grpFilters.Controls.Add(this.label9);
             this.grpFilters.Controls.Add(this.label4);
-            this.grpFilters.Location = new System.Drawing.Point(337, 12);
+            this.grpFilters.Location = new System.Drawing.Point(12, 336);
             this.grpFilters.Name = "grpFilters";
             this.grpFilters.Size = new System.Drawing.Size(308, 127);
             this.grpFilters.TabIndex = 20;
             this.grpFilters.TabStop = false;
             this.grpFilters.Text = "Filters";
-            // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(6, 30);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(29, 13);
-            this.label4.TabIndex = 0;
-            this.label4.Text = "Field";
-            // 
-            // label9
-            // 
-            this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(5, 62);
-            this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(30, 13);
-            this.label9.TabIndex = 1;
-            this.label9.Text = "View";
-            // 
-            // cmbFilterField
-            // 
-            this.cmbFilterField.FormattingEnabled = true;
-            this.cmbFilterField.Location = new System.Drawing.Point(41, 22);
-            this.cmbFilterField.Name = "cmbFilterField";
-            this.cmbFilterField.Size = new System.Drawing.Size(121, 21);
-            this.cmbFilterField.TabIndex = 2;
-            this.cmbFilterField.SelectedIndexChanged += new System.EventHandler(this.cmbFilterField_SelectedIndexChanged);
-            // 
-            // cmbFilterValue
-            // 
-            this.cmbFilterValue.FormattingEnabled = true;
-            this.cmbFilterValue.Location = new System.Drawing.Point(42, 53);
-            this.cmbFilterValue.Name = "cmbFilterValue";
-            this.cmbFilterValue.Size = new System.Drawing.Size(121, 21);
-            this.cmbFilterValue.TabIndex = 3;
-            // 
-            // lstFilters
-            // 
-            this.lstFilters.FormattingEnabled = true;
-            this.lstFilters.Location = new System.Drawing.Point(189, 10);
-            this.lstFilters.Name = "lstFilters";
-            this.lstFilters.Size = new System.Drawing.Size(113, 108);
-            this.lstFilters.TabIndex = 4;
-            // 
-            // btnAddFilter
-            // 
-            this.btnAddFilter.Location = new System.Drawing.Point(9, 98);
-            this.btnAddFilter.Name = "btnAddFilter";
-            this.btnAddFilter.Size = new System.Drawing.Size(75, 23);
-            this.btnAddFilter.TabIndex = 5;
-            this.btnAddFilter.Text = "Add Filter";
-            this.btnAddFilter.UseVisualStyleBackColor = true;
-            this.btnAddFilter.Click += new System.EventHandler(this.btnAddFilter_Click);
             // 
             // btnRemoveFilter
             // 
@@ -421,11 +377,145 @@ namespace PptExcelSync
             this.btnRemoveFilter.UseVisualStyleBackColor = true;
             this.btnRemoveFilter.Click += new System.EventHandler(this.btnRemoveFilter_Click);
             // 
+            // btnAddFilter
+            // 
+            this.btnAddFilter.Location = new System.Drawing.Point(9, 98);
+            this.btnAddFilter.Name = "btnAddFilter";
+            this.btnAddFilter.Size = new System.Drawing.Size(75, 23);
+            this.btnAddFilter.TabIndex = 5;
+            this.btnAddFilter.Text = "Add Filter";
+            this.btnAddFilter.UseVisualStyleBackColor = true;
+            this.btnAddFilter.Click += new System.EventHandler(this.btnAddFilter_Click);
+            // 
+            // lstFilters
+            // 
+            this.lstFilters.FormattingEnabled = true;
+            this.lstFilters.Location = new System.Drawing.Point(189, 10);
+            this.lstFilters.Name = "lstFilters";
+            this.lstFilters.Size = new System.Drawing.Size(113, 108);
+            this.lstFilters.TabIndex = 4;
+            // 
+            // cmbFilterValue
+            // 
+            this.cmbFilterValue.FormattingEnabled = true;
+            this.cmbFilterValue.Location = new System.Drawing.Point(42, 53);
+            this.cmbFilterValue.Name = "cmbFilterValue";
+            this.cmbFilterValue.Size = new System.Drawing.Size(121, 21);
+            this.cmbFilterValue.TabIndex = 3;
+            // 
+            // cmbFilterField
+            // 
+            this.cmbFilterField.FormattingEnabled = true;
+            this.cmbFilterField.Location = new System.Drawing.Point(41, 22);
+            this.cmbFilterField.Name = "cmbFilterField";
+            this.cmbFilterField.Size = new System.Drawing.Size(121, 21);
+            this.cmbFilterField.TabIndex = 2;
+            this.cmbFilterField.SelectedIndexChanged += new System.EventHandler(this.cmbFilterField_SelectedIndexChanged);
+            // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(5, 62);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(30, 13);
+            this.label9.TabIndex = 1;
+            this.label9.Text = "View";
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(6, 30);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(29, 13);
+            this.label4.TabIndex = 0;
+            this.label4.Text = "Field";
+            // 
+            // groupBox3
+            // 
+            this.groupBox3.Controls.Add(this.lblMergedPreview);
+            this.groupBox3.Controls.Add(this.label10);
+            this.groupBox3.Controls.Add(this.cmbColumnField);
+            this.groupBox3.Controls.Add(this.btnMergeFiles);
+            this.groupBox3.Controls.Add(this.btnRemoveFile);
+            this.groupBox3.Controls.Add(this.lstDatasetFiles);
+            this.groupBox3.Controls.Add(this.btnAddFiles);
+            this.groupBox3.Location = new System.Drawing.Point(340, 12);
+            this.groupBox3.Name = "groupBox3";
+            this.groupBox3.Size = new System.Drawing.Size(304, 136);
+            this.groupBox3.TabIndex = 21;
+            this.groupBox3.TabStop = false;
+            this.groupBox3.Text = "YoY Comparison";
+            // 
+            // lblMergedPreview
+            // 
+            this.lblMergedPreview.AutoSize = true;
+            this.lblMergedPreview.Location = new System.Drawing.Point(201, 52);
+            this.lblMergedPreview.Name = "lblMergedPreview";
+            this.lblMergedPreview.Size = new System.Drawing.Size(45, 13);
+            this.lblMergedPreview.TabIndex = 7;
+            this.lblMergedPreview.Text = "Preview";
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(6, 54);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(42, 13);
+            this.label10.TabIndex = 6;
+            this.label10.Text = "Column";
+            // 
+            // cmbColumnField
+            // 
+            this.cmbColumnField.FormattingEnabled = true;
+            this.cmbColumnField.Location = new System.Drawing.Point(64, 49);
+            this.cmbColumnField.Name = "cmbColumnField";
+            this.cmbColumnField.Size = new System.Drawing.Size(121, 21);
+            this.cmbColumnField.TabIndex = 5;
+            // 
+            // btnMergeFiles
+            // 
+            this.btnMergeFiles.Location = new System.Drawing.Point(171, 21);
+            this.btnMergeFiles.Name = "btnMergeFiles";
+            this.btnMergeFiles.Size = new System.Drawing.Size(75, 23);
+            this.btnMergeFiles.TabIndex = 4;
+            this.btnMergeFiles.Text = "Merge Files";
+            this.btnMergeFiles.UseVisualStyleBackColor = true;
+            this.btnMergeFiles.Click += new System.EventHandler(this.btnMergeFiles_Click);
+            // 
+            // btnRemoveFile
+            // 
+            this.btnRemoveFile.Location = new System.Drawing.Point(90, 20);
+            this.btnRemoveFile.Name = "btnRemoveFile";
+            this.btnRemoveFile.Size = new System.Drawing.Size(75, 23);
+            this.btnRemoveFile.TabIndex = 3;
+            this.btnRemoveFile.Text = "Remove";
+            this.btnRemoveFile.UseVisualStyleBackColor = true;
+            this.btnRemoveFile.Click += new System.EventHandler(this.btnRemoveFile_Click);
+            // 
+            // lstDatasetFiles
+            // 
+            this.lstDatasetFiles.FormattingEnabled = true;
+            this.lstDatasetFiles.Location = new System.Drawing.Point(9, 75);
+            this.lstDatasetFiles.Name = "lstDatasetFiles";
+            this.lstDatasetFiles.Size = new System.Drawing.Size(176, 56);
+            this.lstDatasetFiles.TabIndex = 2;
+            // 
+            // btnAddFiles
+            // 
+            this.btnAddFiles.Location = new System.Drawing.Point(9, 20);
+            this.btnAddFiles.Name = "btnAddFiles";
+            this.btnAddFiles.Size = new System.Drawing.Size(75, 23);
+            this.btnAddFiles.TabIndex = 1;
+            this.btnAddFiles.Text = "Add File";
+            this.btnAddFiles.UseVisualStyleBackColor = true;
+            this.btnAddFiles.Click += new System.EventHandler(this.btnAddFiles_Click);
+            // 
             // Pivot
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(963, 368);
+            this.ClientSize = new System.Drawing.Size(662, 477);
+            this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.grpFilters);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
@@ -440,6 +530,8 @@ namespace PptExcelSync
             this.groupBox2.PerformLayout();
             this.grpFilters.ResumeLayout(false);
             this.grpFilters.PerformLayout();
+            this.groupBox3.ResumeLayout(false);
+            this.groupBox3.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -482,5 +574,13 @@ namespace PptExcelSync
         private ComboBox cmbFilterField;
         private Label label9;
         private Label label4;
+        private GroupBox groupBox3;
+        private ComboBox cmbColumnField;
+        private Button btnMergeFiles;
+        private Button btnRemoveFile;
+        private ListBox lstDatasetFiles;
+        private Button btnAddFiles;
+        private Label label10;
+        private Label lblMergedPreview;
     }
 }

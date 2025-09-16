@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using Color = System.Drawing.Color;
@@ -16,6 +17,9 @@ namespace PptExcelSync
     {
         public string FilePath = string.Empty;
         private Color selectedColor = Color.Empty;
+       // private DataTable _currentData;           // merged or single dataset currently in the form
+        private List<string> _selectedFiles = new List<string>();
+        public string columnField => cmbColumnField.SelectedItem?.ToString();
         public string SelectedRowField => cmbRowField.SelectedItem?.ToString();
         public string SelectedChartTypeField => cmbChartType.SelectedItem?.ToString();
         public List<string> SelectedValueFields =>
@@ -132,57 +136,104 @@ namespace PptExcelSync
 
             MessageBox.Show($"Calculated field '{fieldName}' deleted successfully.");
         }
-
-
         private void PopulateDropdowns(DataTable data)
         {
-            cmbRowField.Items.Clear();
-            clbValueFields.Items.Clear();
-            cmbField.Items.Clear();
+            if (data == null) return;
 
+            // Row fields = all columns
+            cmbRowField.Items.Clear();
+            foreach (DataColumn col in data.Columns)
+                cmbRowField.Items.Add(col.ColumnName);
+
+            // Column (split by): same as row fields plus a -- none -- option
+            cmbColumnField.Items.Clear();
+            cmbColumnField.Items.Add("-- none --");
+            foreach (DataColumn col in data.Columns)
+                cmbColumnField.Items.Add(col.ColumnName);
+
+            // Value fields = only numeric columns (try parse first N rows)
+            clbValueFields.Items.Clear();
             foreach (DataColumn col in data.Columns)
             {
+                // skip Source column as a value
+                if (col.ColumnName.Equals("Source", StringComparison.OrdinalIgnoreCase)) continue;
+
+                // detect numeric by sampling
                 bool isNumeric = true;
-
-                foreach (DataRow row in data.Rows.Cast<DataRow>().Take(2)) // check first 5 rows
+                int sampleCount = Math.Min(20, data.Rows.Count);
+                for (int r = 0; r < sampleCount; r++)
                 {
-                    var val = row[col.ColumnName]?.ToString();
-                    if (string.IsNullOrWhiteSpace(val)) continue;
-
-                    if (!double.TryParse(val, out _))
+                    var s = data.Rows[r][col].ToString();
+                    if (!double.TryParse(s, out _))
                     {
                         isNumeric = false;
                         break;
                     }
                 }
-
-                if (isNumeric)
-                {
-                    clbValueFields.Items.Add(col.ColumnName);
-                    cmbField.Items.Add(col.ColumnName);
-                }
-                else
-                {
-                    cmbRowField.Items.Add(col.ColumnName);
-                }
+                if (isNumeric) clbValueFields.Items.Add(col.ColumnName);
             }
-
-            // Default selections
-            if (cmbRowField.Items.Count > 0) cmbRowField.SelectedIndex = 0;
-            if (clbValueFields.Items.Count > 0) clbValueFields.SelectedIndex = 0;
 
             // Aggregations
             clbAggregations.Items.Clear();
             clbAggregations.Items.AddRange(new string[] { "Sum", "Average", "Count", "Max", "Min" });
 
-            // Fill filter fields with all columns
-            cmbFilterField.Items.Clear();
-            foreach (DataColumn col in data.Columns)
-            {
-                cmbFilterField.Items.Add(col.ColumnName);
-            }
-
+            // default selections
+            if (cmbRowField.Items.Count > 0) cmbRowField.SelectedIndex = 0;
+            cmbColumnField.SelectedIndex = 0; // default -- none --
+            if (clbValueFields.Items.Count > 0) clbValueFields.SelectedIndex = 0;
+            clbAggregations.SelectedIndex = 0;
         }
+
+
+        //private void PopulateDropdowns(DataTable data)
+        //{
+        //    cmbRowField.Items.Clear();
+        //    clbValueFields.Items.Clear();
+        //    cmbField.Items.Clear();
+
+        //    foreach (DataColumn col in data.Columns)
+        //    {
+        //        bool isNumeric = true;
+
+        //        foreach (DataRow row in data.Rows.Cast<DataRow>().Take(2)) // check first 5 rows
+        //        {
+        //            var val = row[col.ColumnName]?.ToString();
+        //            if (string.IsNullOrWhiteSpace(val)) continue;
+
+        //            if (!double.TryParse(val, out _))
+        //            {
+        //                isNumeric = false;
+        //                break;
+        //            }
+        //        }
+
+        //        if (isNumeric)
+        //        {
+        //            clbValueFields.Items.Add(col.ColumnName);
+        //            cmbField.Items.Add(col.ColumnName);
+        //        }
+        //        else
+        //        {
+        //            cmbRowField.Items.Add(col.ColumnName);
+        //        }
+        //    }
+
+        //    // Default selections
+        //    if (cmbRowField.Items.Count > 0) cmbRowField.SelectedIndex = 0;
+        //    if (clbValueFields.Items.Count > 0) clbValueFields.SelectedIndex = 0;
+
+        //    // Aggregations
+        //    clbAggregations.Items.Clear();
+        //    clbAggregations.Items.AddRange(new string[] { "Sum", "Average", "Count", "Max", "Min" });
+
+        //    // Fill filter fields with all columns
+        //    cmbFilterField.Items.Clear();
+        //    foreach (DataColumn col in data.Columns)
+        //    {
+        //        cmbFilterField.Items.Add(col.ColumnName);
+        //    }
+
+        //}
 
         private void btnGenerate_Click(object sender, EventArgs e)
         {
@@ -403,9 +454,53 @@ namespace PptExcelSync
             // Otherwise, return an empty list if you don’t maintain them in-memory.
             return _calculatedFields ?? new List<CalculatedFieldInfo>();
         }
-        
 
+        private void btnAddFiles_Click(object sender, EventArgs e)
+        {
+            using (var ofd = new OpenFileDialog())
+            {
+                ofd.Filter = "Excel & CSV|*.xlsx;*.xls;*.csv";
+                ofd.Multiselect = true;
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    foreach (var f in ofd.FileNames)
+                    {
+                        if (!_selectedFiles.Contains(f))
+                        {
+                            _selectedFiles.Add(f);
+                            lstDatasetFiles.Items.Add(Path.GetFileName(f));
+                        }
+                    }
+                }
+            }
+        }
 
+        private void btnRemoveFile_Click(object sender, EventArgs e)
+        {
+            if (lstDatasetFiles.SelectedIndex >= 0)
+            {
+                int idx = lstDatasetFiles.SelectedIndex;
+                _selectedFiles.RemoveAt(idx);
+                lstDatasetFiles.Items.RemoveAt(idx);
+            }
+        }
+
+        private void btnMergeFiles_Click(object sender, EventArgs e)
+        {
+            if (_selectedFiles.Count == 0)
+            {
+                MessageBox.Show("Select at least one file.");
+                return;
+            }
+
+            var dm = new DatasetManager();
+            _data = dm.LoadAndMergeDatasets(_selectedFiles);
+
+            // populate UI with merged dataset
+            PopulateDropdowns(_data);
+
+            MessageBox.Show($"Merged {_selectedFiles.Count} files. {_data.Rows.Count} rows, {_data.Columns.Count} columns. 'Source' column added.");
+        }
 
     }
 }
