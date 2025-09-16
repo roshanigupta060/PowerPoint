@@ -113,8 +113,11 @@ namespace PptExcelSync
                 if (form.ShowDialog() == DialogResult.OK)
                 {
                     var newConfig = form.GetConfig();
+                    string columnField = form.columnField;
+                    if (columnField == "-- none --") columnField = null;
+
                     var newPivot = Globals.Ribbons.Ribbon1.CreatePivot(dt, newConfig.RowField, newConfig.ValueFields,
-                        newConfig.Aggregations, newConfig.Filters);
+                        newConfig.Aggregations, columnField, newConfig.Filters);
 
                     if (shape.Type == Office.MsoShapeType.msoChart)
                         Globals.Ribbons.Ribbon1.UpdatePivotChartInPowerPoint(shape, newPivot, newConfig);
