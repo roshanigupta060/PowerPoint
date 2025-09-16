@@ -1,4 +1,7 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Wordprocessing;
+using Microsoft.Office.Interop.Excel;
+using Microsoft.Office.Interop.PowerPoint;
 using Microsoft.Office.Tools.Ribbon;
 using NCalc;
 using Newtonsoft.Json;
@@ -16,6 +19,7 @@ using System.Web;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 using System.Windows.Forms.VisualStyles;
+using ChartArea = System.Windows.Forms.DataVisualization.Charting.ChartArea;
 using Color = System.Drawing.Color;
 using DataTable = System.Data.DataTable;
 using Excel = Microsoft.Office.Interop.Excel;
@@ -161,7 +165,7 @@ namespace PptExcelSync
                 case "bar": type = SeriesChartType.Bar; break;
             }
 
-            var dt = new DatasetManager().LoadExcel(filePath);
+            var dt = new DatasetManager().LoadDataset(filePath);
 
             if (dt.Columns.Count < 2)
             {
@@ -174,15 +178,15 @@ namespace PptExcelSync
 
             var chart = new System.Windows.Forms.DataVisualization.Charting.Chart
             {
-                Width = 800,
+                Width = 900,
                 Height = 400
             };
             chart.ChartAreas.Add(new ChartArea("MainArea"));
 
             chart.ChartAreas["MainArea"].AxisX.Title = xCol;
             chart.ChartAreas["MainArea"].AxisX.Interval = 1;
-            chart.ChartAreas["MainArea"].AxisX.MajorGrid.LineColor = Color.LightGray;
-            chart.ChartAreas["MainArea"].AxisY.MajorGrid.LineColor = Color.LightGray;
+            chart.ChartAreas["MainArea"].AxisX.MajorGrid.LineColor = Color.Blue;
+            chart.ChartAreas["MainArea"].AxisY.MajorGrid.LineColor = Color.Blue;
 
             // Loop over remaining columns and add each as a series
             for (int col = 1; col < dt.Columns.Count; col++)
@@ -233,25 +237,10 @@ namespace PptExcelSync
             try
             {
                 // Read Excel with ClosedXML
-                var dt = new System.Data.DataTable();
-                using (var wb = new ClosedXML.Excel.XLWorkbook(filePath))
-                {
-                    var ws = wb.Worksheet(1);
-                    var firstRow = ws.FirstRowUsed();
+                //var dt = new System.Data.DataTable();
+                var dt = new DatasetManager().LoadDataset(filePath);
 
-                    // Columns
-                    foreach (var cell in firstRow.CellsUsed())
-                        dt.Columns.Add(cell.GetString());
-
-                    // Data
-                    foreach (var row in ws.RowsUsed().Skip(1))
-                    {
-                        var dr = dt.NewRow();
-                        for (int i = 0; i < dt.Columns.Count; i++)
-                            dr[i] = row.Cell(i + 1).GetValue<string>();
-                        dt.Rows.Add(dr);
-                    }
-                }
+  
 
                 // Insert into current slide
                 var app = Globals.ThisAddIn.Application;
@@ -271,12 +260,30 @@ namespace PptExcelSync
 
                 // headers
                 for (int c = 0; c < cols; c++)
-                    table.Cell(1, c + 1).Shape.TextFrame.TextRange.Text = dt.Columns[c].ColumnName;
+                {
+                    var cell = table.Cell(1, c + 1);
+
+                    cell.Shape.TextFrame.TextRange.Text = dt.Columns[c].ColumnName;
+
+                    // ✅ Apply header styling
+                    //cell.Shape.TextFrame.TextRange.Font.Bold = Microsoft.Office.Core.MsoTriState.msoTrue;
+                    //cell.Shape.TextFrame.TextRange.Font.Size = 14;
+                    //cell.Shape.TextFrame.TextRange.Font.Name = "Calibri";
+                    //cell.Shape.Fill.ForeColor.RGB = System.Drawing.Color.AliceBlue.ToArgb();
+                }
+
 
                 // data
                 for (int r = 0; r < dt.Rows.Count; r++)
+                {
                     for (int c = 0; c < cols; c++)
-                        table.Cell(r + 2, c + 1).Shape.TextFrame.TextRange.Text = dt.Rows[r][c]?.ToString();
+                    {
+                        var cell = table.Cell(r + 2, c + 1);
+                        cell.Shape.TextFrame.TextRange.Text = dt.Rows[r][c]?.ToString();
+                        //cell.Shape.TextFrame.TextRange.Font.Size = 12;
+                        //cell.Shape.TextFrame.TextRange.Font.Name = "Calibri";
+                    }
+                }       
             }
             catch (Exception ex)
             {
@@ -341,7 +348,7 @@ namespace PptExcelSync
                 return;
             }
 
-            var dt = new DatasetManager().LoadExcel(filePath);
+            var dt = new DatasetManager().LoadDataset(filePath);
 
             // Show Pivot dialog
             var form = new Pivot(dt, filePath);
@@ -892,10 +899,8 @@ namespace PptExcelSync
                 GC.WaitForPendingFinalizers();
             }
         }
-        public PowerPoint.Shape UpdatePivotTableInPowerPoint(
-     PowerPoint.Shape tableShape,
-     DataTable pivotTable,
-     PivotConfig config)
+        public PowerPoint.Shape UpdatePivotTableInPowerPoint( PowerPoint.Shape tableShape,
+     DataTable pivotTable,PivotConfig config)
         {
             PowerPoint.Shape newShape = tableShape;
 
@@ -919,14 +924,21 @@ namespace PptExcelSync
                     table = newShape.Table;
                 }
 
+                float fontSize = config?.Styles?.TableFontSize ?? 12;
+                string fontName = config?.Styles?.TableFontName ?? "Calibri";
+                int headerColor = config?.Styles?.TableHeaderColor
+                                  ?? System.Drawing.Color.LightGray.ToArgb();
+
                 // --- Write headers ---
                 for (int c = 0; c < cols; c++)
                 {
                     var headerCell = table.Cell(1, c + 1);
                     headerCell.Shape.TextFrame.TextRange.Text = pivotTable.Columns[c].ColumnName;
+
                     headerCell.Shape.TextFrame.TextRange.Font.Bold = Microsoft.Office.Core.MsoTriState.msoTrue;
-                    headerCell.Shape.TextFrame.TextRange.ParagraphFormat.Alignment =
-                        PowerPoint.PpParagraphAlignment.ppAlignCenter;
+                    headerCell.Shape.TextFrame.TextRange.Font.Size = fontSize + 2; // headers slightly bigger
+                    headerCell.Shape.TextFrame.TextRange.Font.Name = fontName;
+                    headerCell.Shape.Fill.ForeColor.RGB = headerColor;
                 }
 
                 // --- Write values + conditional formatting ---
@@ -937,6 +949,9 @@ namespace PptExcelSync
                         string text = pivotTable.Rows[r][c]?.ToString() ?? "";
                         var cell = table.Cell(r + 2, c + 1);
                         cell.Shape.TextFrame.TextRange.Text = text;
+
+                        cell.Shape.TextFrame.TextRange.Font.Size = fontSize;
+                        cell.Shape.TextFrame.TextRange.Font.Name = fontName;
 
                         if (config?.ConditionalRules != null && double.TryParse(text, out var val))
                         {
