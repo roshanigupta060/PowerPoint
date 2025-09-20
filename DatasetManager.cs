@@ -114,55 +114,59 @@ namespace PptExcelSync
 
         public DataTable LoadAndMergeDatasets(IEnumerable<string> filePaths)
         {
+            // Ensure we have an indexable list
+            var fileList = (filePaths ?? Enumerable.Empty<string>()).Where(p => !string.IsNullOrWhiteSpace(p)).ToList();
             var merged = new DataTable();
 
-            // Keep track of column order and set
-            var columnSet = new List<string>((IEnumerable<string>)StringComparer.OrdinalIgnoreCase);
+            // Keep column insertion order and provide case-insensitive uniqueness
+            var columnSet = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            // Read each file into a DataTable
+            // Hold the loaded tables
             var tables = new List<DataTable>();
 
-            foreach (var path in filePaths)
+            // Load each file using your generic loader (LoadDataset should handle csv/xlsx)
+            foreach (var path in fileList)
             {
                 if (!File.Exists(path)) continue;
 
-                DataTable dt;
-                var ext = Path.GetExtension(path).ToLowerInvariant();
-                if (ext == ".csv")
-                    dt = LoadCsv(path);
-                else // assume Excel
-                    dt = LoadExcel(path);
-
+                // Use your existing universal loader. Replace with LoadCsv/LoadExcel if needed.
+                DataTable dt = LoadDataset(path);
                 if (dt == null || dt.Columns.Count == 0) continue;
 
                 tables.Add(dt);
 
-                // union columns
+                // Collect unique column names (case-insensitive)
                 foreach (DataColumn c in dt.Columns)
                 {
-                    if (!columnSet.Contains(c.ColumnName, StringComparer.OrdinalIgnoreCase))
-                        columnSet.Add(c.ColumnName);
+                    var name = (c.ColumnName ?? "").Trim();
+                    if (string.IsNullOrEmpty(name)) continue;
+                    if (seen.Add(name))
+                        columnSet.Add(name);
                 }
             }
 
-            // Build merged DataTable with union columns plus 'Source'
+            // Build merged DataTable schema (union of columns)
             foreach (var colName in columnSet)
                 merged.Columns.Add(colName, typeof(string));
 
-            // Add Source column at end
+            // Add Source column at the end
             merged.Columns.Add("Source", typeof(string));
 
-            // Append rows from each table
+            // Append rows from each loaded table, mapping to merged columns
             for (int i = 0; i < tables.Count; i++)
             {
                 var dt = tables[i];
-                var source = Path.GetFileNameWithoutExtension(filePaths.ElementAt(i));
+                var source = Path.GetFileNameWithoutExtension(fileList[i]) ?? $"File{i}";
                 foreach (DataRow r in dt.Rows)
                 {
                     var nr = merged.NewRow();
+                    // copy known columns
                     foreach (DataColumn c in dt.Columns)
                     {
-                        nr[c.ColumnName] = r[c]?.ToString() ?? "";
+                        var col = c.ColumnName?.Trim();
+                        if (string.IsNullOrEmpty(col)) continue;
+                        nr[col] = r[c] != null ? r[c].ToString() : "";
                     }
                     nr["Source"] = source;
                     merged.Rows.Add(nr);
@@ -171,6 +175,7 @@ namespace PptExcelSync
 
             return merged;
         }
+
 
     }
 }

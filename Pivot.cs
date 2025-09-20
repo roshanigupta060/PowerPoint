@@ -22,6 +22,7 @@ namespace PptExcelSync
         public string columnField => cmbColumnField.SelectedItem?.ToString();
         public string SelectedRowField => cmbRowField.SelectedItem?.ToString();
         public string SelectedChartTypeField => cmbChartType.SelectedItem?.ToString();
+        public string selectedYOYCompField => cmbYoYColumnField.SelectedItem != null ? cmbYoYColumnField.SelectedItem.ToString() : "-- none --";
         public List<string> SelectedValueFields =>
             clbValueFields.CheckedItems.Cast<string>().ToList();
         public List<string> SelectedAggregations =>
@@ -41,7 +42,7 @@ namespace PptExcelSync
             }
         }
 
-        DataTable _data;
+       public DataTable _data;
         public Pivot(DataTable data, string filePath)
         {
             _data = data;
@@ -142,21 +143,24 @@ namespace PptExcelSync
 
             // Row fields = all columns
             cmbRowField.Items.Clear();
-            foreach (DataColumn col in data.Columns)
-                cmbRowField.Items.Add(col.ColumnName);
-
-            // Column (split by): same as row fields plus a -- none -- option
+            clbValueFields.Items.Clear();
+            cmbField.Items.Clear();
             cmbColumnField.Items.Clear();
+            // Column (split by): same as row fields plus a -- none -- option
             cmbColumnField.Items.Add("-- none --");
-            foreach (DataColumn col in data.Columns)
-                cmbColumnField.Items.Add(col.ColumnName);
+
+            //foreach (DataColumn col in data.Columns)
+                
+
+           
+            //foreach (DataColumn col in data.Columns)
+            //    cmbColumnField.Items.Add(col.ColumnName);
 
             // Value fields = only numeric columns (try parse first N rows)
-            clbValueFields.Items.Clear();
             foreach (DataColumn col in data.Columns)
             {
                 // skip Source column as a value
-                if (col.ColumnName.Equals("Source", StringComparison.OrdinalIgnoreCase)) continue;
+               // if (col.ColumnName.Equals("Source", StringComparison.OrdinalIgnoreCase)) continue;
 
                 // detect numeric by sampling
                 bool isNumeric = true;
@@ -170,18 +174,37 @@ namespace PptExcelSync
                         break;
                     }
                 }
-                if (isNumeric) clbValueFields.Items.Add(col.ColumnName);
+                if (isNumeric) {
+                    clbValueFields.Items.Add(col.ColumnName);
+                    cmbField.Items.Add(col.ColumnName);
+                    cmbColumnField.Items.Add(col.ColumnName);
+                }
+                else
+                {           
+                    if (col.ColumnName.Equals("Source", StringComparison.OrdinalIgnoreCase))
+                        cmbYoYColumnField.Items.Add(col.ColumnName);
+                    else
+                        cmbRowField.Items.Add(col.ColumnName);
+                }
             }
+          
+            // default selections
+            if (cmbRowField.Items.Count > 0) cmbRowField.SelectedIndex = 0;
+            cmbColumnField.SelectedIndex = 0; // default -- none --
+            if (clbValueFields.Items.Count > 0) clbValueFields.SelectedIndex = 0;
+           // clbAggregations.SelectedIndex = 0;
 
             // Aggregations
             clbAggregations.Items.Clear();
             clbAggregations.Items.AddRange(new string[] { "Sum", "Average", "Count", "Max", "Min" });
 
-            // default selections
-            if (cmbRowField.Items.Count > 0) cmbRowField.SelectedIndex = 0;
-            cmbColumnField.SelectedIndex = 0; // default -- none --
-            if (clbValueFields.Items.Count > 0) clbValueFields.SelectedIndex = 0;
-            clbAggregations.SelectedIndex = 0;
+
+            // Fill filter fields with all columns
+            cmbFilterField.Items.Clear();
+            foreach (DataColumn col in data.Columns)
+            {
+                cmbFilterField.Items.Add(col.ColumnName);
+            }
         }
 
 

@@ -360,12 +360,15 @@ namespace PptExcelSync
                     MessageBox.Show("Please select only two values.");
                     return;
                 }
-
+                var newdt = form._data;
                 var filters = form.GetFilters();
-                string columnField = form.columnField;
-                if (columnField == "-- none --") columnField = null;
+                string columnField = form.selectedYOYCompField;
+                if (columnField == "-- none --")
+                    columnField = null;               
 
-                var pivot = CreatePivot(dt, form.SelectedRowField, form.SelectedValueFields, form.SelectedAggregations, columnField, filters);
+                var dataTable = columnField == null ? dt : newdt;
+
+                var pivot = CreatePivot(dataTable, form.SelectedRowField, form.SelectedValueFields, form.SelectedAggregations, columnField, filters);
 
                 // ⬇️ Get rules from the form
                 var rules = form.GetConditionalRules();
@@ -397,13 +400,8 @@ namespace PptExcelSync
             return dict;
         }
 
-        public DataTable CreatePivot(
-            
-    DataTable dt,
-    string rowField,
-    List<string> valueFields,
-    List<string> aggFuncs,
-    string columnField = null,
+        public DataTable CreatePivot(      
+    DataTable dt, string rowField, List<string> valueFields, List<string> aggFuncs, string columnField = null,
     Dictionary<string, string> filters = null)
         {
             if (dt == null) throw new ArgumentNullException(nameof(dt));
@@ -417,9 +415,13 @@ namespace PptExcelSync
                     rowsQuery = rowsQuery.Where(r => r[f.Key]?.ToString() == f.Value);
             }
 
+           
+          
+
             // If columnField is null or empty => simple pivot (one column per agg/value)
             if (string.IsNullOrEmpty(columnField))
             {
+                // --- Step 2: Group by row field ---
                 var grouped = rowsQuery.GroupBy(r => r[rowField].ToString());
                 var pivot = new DataTable();
                 pivot.Columns.Add(rowField, typeof(string));
@@ -456,9 +458,13 @@ namespace PptExcelSync
                 return pivot;
             }
 
-            // --- columnField present (YoY/multi-file) ---
-            // Determine distinct column groups (for example: "2023","2024" or file names)
-            var distinctColValues = rowsQuery
+            if (!dt.Columns.Contains(columnField))  //Source
+                throw new ArgumentException($"Column '{columnField}' does not exist in dataset. Available columns: "
+                                            + string.Join(",", dt.Columns.Cast<DataColumn>().Select(c => c.ColumnName)));
+
+                                    // --- columnField present (YoY/multi-file) ---
+                                    // Determine distinct column groups (for example: "2023","2024" or file names)
+                                    var distinctColValues = rowsQuery
                 .Select(r => r[columnField]?.ToString() ?? "")
                 .Distinct()
                 .OrderBy(x => x)
@@ -850,9 +856,11 @@ namespace PptExcelSync
                     // User updated config → collect latest
                     var newConfig = form.GetConfig();
 
-                    string columnField = form.columnField;
+                    string columnField = form.selectedYOYCompField;
                     if (columnField == "-- none --") columnField = null;
 
+                    var newdt = form._data;
+                    var dataTable = columnField == null ? dt : newdt;
                     // Build new pivot
                     var newPivot = CreatePivot(dt,
                         newConfig.RowField, newConfig.ValueFields,
