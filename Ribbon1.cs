@@ -1,5 +1,6 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Wordprocessing;
+using Microsoft.Office.Core;
 using Microsoft.Office.Interop.Excel;
 using Microsoft.Office.Interop.PowerPoint;
 using Microsoft.Office.Tools.Ribbon;
@@ -1135,6 +1136,195 @@ namespace PptExcelSync
             {
                 MessageBox.Show("Error updating table: " + ex.Message);
                 return tableShape;
+            }
+        }
+
+        private void btnDrillDown_Click(object sender, RibbonControlEventArgs e)
+        {
+            try
+            {
+                var app = Globals.ThisAddIn.Application;
+                var sel = app.ActiveWindow.Selection;
+
+                if (sel == null)
+                {
+                    MessageBox.Show("No selection.");
+                    return;
+                }
+
+                // Only handle shapes / text selections
+                if (sel.Type == PowerPoint.PpSelectionType.ppSelectionShapes ||
+                    sel.Type == PowerPoint.PpSelectionType.ppSelectionText)
+                {
+                    PowerPoint.Shape shape = null;
+                    // Try to obtain the shape containing selection
+                    try
+                    {
+                        // If shape(s) selected
+                        if (sel.Type == PowerPoint.PpSelectionType.ppSelectionShapes && sel.ShapeRange != null && sel.ShapeRange.Count >= 1)
+                            shape = sel.ShapeRange[1];
+                        else
+                        {
+                            // If text inside a shape is selected, try to get the parent shape
+                            if (sel.Type == PowerPoint.PpSelectionType.ppSelectionText && sel.TextRange != null)
+                            {
+                                // TextRange.Parent may be the Shape (works in many interop builds)
+                                var parent = sel.TextRange.Parent;
+                                shape = parent as PowerPoint.Shape;
+                                // fallback: try ShapeRange too
+                                if (shape == null && sel.ShapeRange != null && sel.ShapeRange.Count >= 1)
+                                    shape = sel.ShapeRange[1];
+                            }
+                        }
+                    }
+                    catch { /* ignore */ }
+
+                    if (shape == null)
+                    {
+                        MessageBox.Show("Please select a chart or click inside a table cell.");
+                        return;
+                    }
+
+                    // Table case
+                    if (shape.HasTable == Office.MsoTriState.msoTrue)
+                    {
+                            string rowValue = GetSelectedTableFirstColumnValue(sel, shape);
+                        if (string.IsNullOrEmpty(rowValue))
+                        {
+                            MessageBox.Show("Please select inside a table first column value to drill down.");
+                            return;
+                        }
+
+                        // Use your existing drill routine (you asked earlier to pass row value and row field)
+                        ShowDrillDownWindow(rowValue, /* rowFieldName */ "Product");
+                        return;
+                    }
+
+                    // Chart case (unchanged)
+                    if (shape.Type == Office.MsoShapeType.msoChart)
+                    {
+                        string metaJson = shape.Tags["ChartMakerMeta"];
+                        if (string.IsNullOrEmpty(metaJson))
+                        {
+                            MessageBox.Show("This chart is not managed by ChartMaker.");
+                            return;
+                        }
+
+                        var cfg = JsonConvert.DeserializeObject<PivotConfig>(metaJson);
+                        var dt = new DatasetManager().LoadDataset(cfg.DatasetPath);
+
+                        var distinctVals = dt.AsEnumerable()
+                            .Select(r => r[cfg.RowField]?.ToString())
+                            .Where(x => !string.IsNullOrEmpty(x))
+                            .Distinct()
+                            .OrderBy(x => x)
+                            .ToList();
+
+                        using (var drillForm = new DrillDownForm(cfg.RowField, distinctVals, dt))
+                        {
+                            drillForm.ShowDialog();
+                        }
+                        return;
+                    }
+
+                    MessageBox.Show("Drill-down works only on ChartMaker tables or charts.");
+                }
+                else
+                {
+                    MessageBox.Show("Please select a ChartMaker chart/table shape first.");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Drill-down failed: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Tries to determine the first-column (category) value for the currently selected table cell.
+        /// Returns null if cannot determine.
+        /// </summary>
+        private string GetSelectedTableFirstColumnValue(PowerPoint.Selection sel, PowerPoint.Shape tableShape)
+        {
+            try
+            {
+                var tbl = tableShape.Table;
+                if (tbl == null || tbl.Rows == null || tbl.Columns == null) return null;
+
+                // 1) If user selected text inside a cell, use that text to find the row
+                if (sel.Type == PowerPoint.PpSelectionType.ppSelectionText && sel.TextRange != null)
+                {
+                    string selectedText = sel.TextRange.Text?.Trim();
+                    if (!string.IsNullOrEmpty(selectedText))
+                    {
+                        // Compare with first column (category column) values
+                        for (int r = 2; r <= tbl.Rows.Count; r++) // assume row 1 is header
+                        {
+                            string cellVal = tbl.Cell(r, 1).Shape.TextFrame.TextRange.Text?.Trim();
+                            if (string.Equals(cellVal, selectedText, StringComparison.OrdinalIgnoreCase))
+                                return cellVal;
+                        }
+
+                        // If not found in first column, try to find the exact cell match anywhere in the row and then return the first-col
+                        for (int r = 2; r <= tbl.Rows.Count; r++)
+                        {
+                            for (int c = 1; c <= tbl.Columns.Count; c++)
+                            {
+                                string cellVal = tbl.Cell(r, c).Shape.TextFrame.TextRange.Text?.Trim();
+                                if (string.Equals(cellVal, selectedText, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    return tbl.Cell(r, 1).Shape.TextFrame.TextRange.Text?.Trim();
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 2) If the whole table is selected (shape selected) or we couldn't map above,
+                //    fallback: ask user to pick a row via InputBox (simple UX) or return first data row.
+                if (tbl.Rows.Count >= 2)
+                {
+                    // Option A: prompt user for row index (commented)
+                  //  string idxStr = Microsoft.VisualBasic.Interaction.InputBox("Enter row number to drill-down (1 = header):", "Select Row", "2");
+                  //  if (int.TryParse(idxStr, out int userRow) && userRow >= 2 && userRow <= tbl.Rows.Count) return tbl.Cell(userRow, 1).Shape.TextFrame.TextRange.Text.Trim();
+
+                    // Option B: fallback to first data row
+                   // return tbl.Cell(2, 1).Shape.TextFrame.TextRange.Text?.Trim();
+                }
+            }
+            catch { /* ignore and return null below */ }
+
+            return null;
+        }
+
+
+        private void ShowDrillDownWindow(string rowValue, string rowField)
+        {
+            // Active file ka dataset nikaalo
+            string currentFile = ddlDatasets.SelectedItem.Tag.ToString(); // reuse your dataset dropdown
+            if (string.IsNullOrEmpty(currentFile) || ddlDatasets.SelectedItem.Label == "-- select --")
+            {
+                MessageBox.Show("Dataset not found.");
+                return;
+            }
+
+            var dt = new DatasetManager().LoadDataset(currentFile);
+            var filtered = dt.AsEnumerable()
+                .Where(r => r[rowField]?.ToString() == rowValue);
+
+            if (!filtered.Any())
+            {
+                MessageBox.Show("No data found.");
+                return;
+            }
+
+            DataTable result = dt.Clone();
+            foreach (var r in filtered)
+                result.ImportRow(r);
+
+            using (var drillForm = new DrillDownForm(rowField, new List<string> { rowValue }, result))
+            {
+                drillForm.ShowDialog();
             }
         }
 
