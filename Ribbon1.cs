@@ -284,7 +284,8 @@ namespace PptExcelSync
                         //cell.Shape.TextFrame.TextRange.Font.Size = 12;
                         //cell.Shape.TextFrame.TextRange.Font.Name = "Calibri";
                     }
-                }       
+                }
+                
             }
             catch (Exception ex)
             {
@@ -1072,10 +1073,10 @@ namespace PptExcelSync
                     var headerCell = table.Cell(1, c + 1);
                     headerCell.Shape.TextFrame.TextRange.Text = pivotTable.Columns[c].ColumnName;
 
-                    headerCell.Shape.TextFrame.TextRange.Font.Bold = Microsoft.Office.Core.MsoTriState.msoTrue;
-                    headerCell.Shape.TextFrame.TextRange.Font.Size = fontSize + 2; // headers slightly bigger
-                    headerCell.Shape.TextFrame.TextRange.Font.Name = fontName;
-                    headerCell.Shape.Fill.ForeColor.RGB = headerColor;
+                    //headerCell.Shape.TextFrame.TextRange.Font.Bold = Microsoft.Office.Core.MsoTriState.msoTrue;
+                    //headerCell.Shape.TextFrame.TextRange.Font.Size = fontSize + 2; // headers slightly bigger
+                    //headerCell.Shape.TextFrame.TextRange.Font.Name = fontName;
+                    //headerCell.Shape.Fill.ForeColor.RGB = headerColor;
                 }
 
                 // --- Write values + conditional formatting ---
@@ -1087,8 +1088,8 @@ namespace PptExcelSync
                         var cell = table.Cell(r + 2, c + 1);
                         cell.Shape.TextFrame.TextRange.Text = text;
 
-                        cell.Shape.TextFrame.TextRange.Font.Size = fontSize;
-                        cell.Shape.TextFrame.TextRange.Font.Name = fontName;
+                        //cell.Shape.TextFrame.TextRange.Font.Size = fontSize;
+                        //cell.Shape.TextFrame.TextRange.Font.Name = fontName;
 
                         if (config?.ConditionalRules != null && double.TryParse(text, out var val))
                         {
@@ -1152,65 +1153,54 @@ namespace PptExcelSync
                     return;
                 }
 
-                // Only handle shapes / text selections
                 if (sel.Type == PowerPoint.PpSelectionType.ppSelectionShapes ||
                     sel.Type == PowerPoint.PpSelectionType.ppSelectionText)
                 {
                     PowerPoint.Shape shape = null;
-                    // Try to obtain the shape containing selection
+
                     try
                     {
-                        // If shape(s) selected
                         if (sel.Type == PowerPoint.PpSelectionType.ppSelectionShapes && sel.ShapeRange != null && sel.ShapeRange.Count >= 1)
                             shape = sel.ShapeRange[1];
-                        else
-                        {
-                            // If text inside a shape is selected, try to get the parent shape
-                            if (sel.Type == PowerPoint.PpSelectionType.ppSelectionText && sel.TextRange != null)
-                            {
-                                // TextRange.Parent may be the Shape (works in many interop builds)
-                                var parent = sel.TextRange.Parent;
-                                shape = parent as PowerPoint.Shape;
-                                // fallback: try ShapeRange too
-                                if (shape == null && sel.ShapeRange != null && sel.ShapeRange.Count >= 1)
-                                    shape = sel.ShapeRange[1];
-                            }
-                        }
+                        else if (sel.Type == PowerPoint.PpSelectionType.ppSelectionText && sel.TextRange != null)
+                            shape = sel.TextRange.Parent as PowerPoint.Shape ?? sel.ShapeRange?[1];
                     }
-                    catch { /* ignore */ }
+                    catch { }
 
                     if (shape == null)
                     {
-                        MessageBox.Show("Please select a chart or click inside a table cell.");
+                        MessageBox.Show("Please select a chart or table cell.");
                         return;
                     }
 
-                    // Table case
+                    // ✅ Get PivotConfig from metadata (common for both table and chart)
+                    string metaJson = shape.Tags["ChartMakerMeta"];
+                    if (string.IsNullOrEmpty(metaJson))
+                    {
+                        MessageBox.Show("This shape is not managed by ChartMaker.");
+                        return;
+                    }
+
+                    var cfg = JsonConvert.DeserializeObject<PivotConfig>(metaJson);
+
+                    // --- TABLE CASE ---
                     if (shape.HasTable == Office.MsoTriState.msoTrue)
                     {
-                            string rowValue = GetSelectedTableFirstColumnValue(sel, shape);
+                        string rowValue = GetSelectedTableFirstColumnValue(sel, shape);
                         if (string.IsNullOrEmpty(rowValue))
                         {
                             MessageBox.Show("Please select inside a table first column value to drill down.");
                             return;
                         }
 
-                        // Use your existing drill routine (you asked earlier to pass row value and row field)
-                        ShowDrillDownWindow(rowValue, /* rowFieldName */ "Product");
+                        // ✅ Use dynamic RowField
+                        ShowDrillDownWindow(rowValue, cfg.RowField);
                         return;
                     }
 
-                    // Chart case (unchanged)
+                    // --- CHART CASE ---
                     if (shape.Type == Office.MsoShapeType.msoChart)
                     {
-                        string metaJson = shape.Tags["ChartMakerMeta"];
-                        if (string.IsNullOrEmpty(metaJson))
-                        {
-                            MessageBox.Show("This chart is not managed by ChartMaker.");
-                            return;
-                        }
-
-                        var cfg = JsonConvert.DeserializeObject<PivotConfig>(metaJson);
                         var dt = new DatasetManager().LoadDataset(cfg.DatasetPath);
 
                         var distinctVals = dt.AsEnumerable()
@@ -1285,8 +1275,9 @@ namespace PptExcelSync
                 if (tbl.Rows.Count >= 2)
                 {
                     // Option A: prompt user for row index (commented)
-                  //  string idxStr = Microsoft.VisualBasic.Interaction.InputBox("Enter row number to drill-down (1 = header):", "Select Row", "2");
-                  //  if (int.TryParse(idxStr, out int userRow) && userRow >= 2 && userRow <= tbl.Rows.Count) return tbl.Cell(userRow, 1).Shape.TextFrame.TextRange.Text.Trim();
+                    string idxStr = Microsoft.VisualBasic.Interaction.InputBox("Enter row number to drill-down (1 = header):", "Select Row", "2");
+                    if (int.TryParse(idxStr, out int userRow) && userRow >= 2 && userRow <= tbl.Rows.Count) 
+                        return tbl.Cell(userRow, 1).Shape.TextFrame.TextRange.Text.Trim();
 
                     // Option B: fallback to first data row
                    // return tbl.Cell(2, 1).Shape.TextFrame.TextRange.Text?.Trim();

@@ -175,7 +175,7 @@ namespace PptExcelSync
                     }
                 }
                 if (isNumeric) {
-                    clbValueFields.Items.Add(col.ColumnName);
+                    clbValueFields.Items.Add(col.ColumnName);   
                     cmbField.Items.Add(col.ColumnName);
                     cmbColumnField.Items.Add(col.ColumnName);
                 }
@@ -307,7 +307,7 @@ namespace PptExcelSync
                     });
                     metadata.Save(filePath);
                 }
-
+                columnListBox.Items.Add(fieldName);
                 // Refresh dropdowns so new field appears in Values
                 PopulateDropdowns(_data);
 
@@ -525,5 +525,16 @@ namespace PptExcelSync
             MessageBox.Show($"Merged {_selectedFiles.Count} files. {_data.Rows.Count} rows, {_data.Columns.Count} columns. 'Source' column added.");
         }
 
+        private void btnRemoveField_Click(object sender, EventArgs e)
+        {
+            if (columnListBox.SelectedIndex >= 0)
+            {
+                int idx = columnListBox.SelectedIndex;
+                clbValueFields.Items.Remove(columnListBox.SelectedItem);
+                columnListBox.Items.RemoveAt(idx);
+                txtFieldName.Clear();
+                txtFormula.Clear();
+            }
+        }
     }
 }
