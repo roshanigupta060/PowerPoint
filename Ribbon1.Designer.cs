@@ -48,8 +48,8 @@
             this.btnInsertTable_Click = this.Factory.CreateRibbonButton();
             this.btnCreateChart_Click = this.Factory.CreateRibbonButton();
             this.btnEditWithChartMaker = this.Factory.CreateRibbonButton();
-            this.tab1 = this.Factory.CreateRibbonTab();
             this.btnDrillDown = this.Factory.CreateRibbonButton();
+            this.tab1 = this.Factory.CreateRibbonTab();
             this.group1.SuspendLayout();
             this.tab1.SuspendLayout();
             this.SuspendLayout();
@@ -59,12 +59,12 @@
             this.group1.Items.Add(this.btnUploadExcel);
             this.group1.Items.Add(this.ddlDatasets);
             this.group1.Items.Add(this.ddlChartType);
-            this.group1.Items.Add(this.btnPivotView);
-            this.group1.Items.Add(this.btnInsertChart_Click);
             this.group1.Items.Add(this.btnInsertTable_Click);
-            this.group1.Items.Add(this.btnCreateChart_Click);
             this.group1.Items.Add(this.btnEditWithChartMaker);
+            this.group1.Items.Add(this.btnCreateChart_Click);
+            this.group1.Items.Add(this.btnInsertChart_Click);
             this.group1.Items.Add(this.btnDrillDown);
+            this.group1.Items.Add(this.btnPivotView);
             this.group1.Name = "group1";
             // 
             // btnUploadExcel
@@ -129,18 +129,18 @@
             this.btnEditWithChartMaker.Name = "btnEditWithChartMaker";
             this.btnEditWithChartMaker.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnEditWithChartMaker_ClickAsync);
             // 
+            // btnDrillDown
+            // 
+            this.btnDrillDown.Label = "Drill Down";
+            this.btnDrillDown.Name = "btnDrillDown";
+            this.btnDrillDown.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnDrillDown_Click);
+            // 
             // tab1
             // 
             this.tab1.ControlId.ControlIdType = Microsoft.Office.Tools.Ribbon.RibbonControlIdType.Office;
             this.tab1.Groups.Add(this.group1);
             this.tab1.Label = "TabAddIns";
             this.tab1.Name = "tab1";
-            // 
-            // btnDrillDown
-            // 
-            this.btnDrillDown.Label = "Drill Down";
-            this.btnDrillDown.Name = "btnDrillDown";
-            this.btnDrillDown.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnDrillDown_Click);
             // 
             // Ribbon1
             // 

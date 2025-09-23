@@ -59,6 +59,8 @@ namespace PptExcelSync
             this.colorDialog1 = new System.Windows.Forms.ColorDialog();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.cmbYoYColumnField = new System.Windows.Forms.ComboBox();
+            this.label11 = new System.Windows.Forms.Label();
             this.grpFilters = new System.Windows.Forms.GroupBox();
             this.btnRemoveFilter = new System.Windows.Forms.Button();
             this.btnAddFilter = new System.Windows.Forms.Button();
@@ -74,8 +76,8 @@ namespace PptExcelSync
             this.btnRemoveFile = new System.Windows.Forms.Button();
             this.lstDatasetFiles = new System.Windows.Forms.ListBox();
             this.btnAddFiles = new System.Windows.Forms.Button();
-            this.label11 = new System.Windows.Forms.Label();
-            this.cmbYoYColumnField = new System.Windows.Forms.ComboBox();
+            this.columnListBox = new System.Windows.Forms.ListBox();
+            this.btnRemoveField = new System.Windows.Forms.Button();
             this.grpConditionalFormatting.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -86,7 +88,7 @@ namespace PptExcelSync
             // lable1
             // 
             this.lable1.AutoSize = true;
-            this.lable1.Location = new System.Drawing.Point(8, 76);
+            this.lable1.Location = new System.Drawing.Point(9, 74);
             this.lable1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lable1.Name = "lable1";
             this.lable1.Size = new System.Drawing.Size(34, 16);
@@ -117,7 +119,7 @@ namespace PptExcelSync
             // 
             this.cmbRowField.FormattingEnabled = true;
             this.cmbRowField.Location = new System.Drawing.Point(129, 66);
-            this.cmbRowField.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.cmbRowField.Margin = new System.Windows.Forms.Padding(4);
             this.cmbRowField.Name = "cmbRowField";
             this.cmbRowField.Size = new System.Drawing.Size(160, 24);
             this.cmbRowField.TabIndex = 3;
@@ -125,7 +127,7 @@ namespace PptExcelSync
             // btnGenerate
             // 
             this.btnGenerate.Location = new System.Drawing.Point(147, 329);
-            this.btnGenerate.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnGenerate.Margin = new System.Windows.Forms.Padding(4);
             this.btnGenerate.Name = "btnGenerate";
             this.btnGenerate.Size = new System.Drawing.Size(100, 28);
             this.btnGenerate.TabIndex = 6;
@@ -137,9 +139,9 @@ namespace PptExcelSync
             // 
             this.clbValueFields.FormattingEnabled = true;
             this.clbValueFields.Location = new System.Drawing.Point(12, 155);
-            this.clbValueFields.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.clbValueFields.Margin = new System.Windows.Forms.Padding(4);
             this.clbValueFields.Name = "clbValueFields";
-            this.clbValueFields.Size = new System.Drawing.Size(159, 106);
+            this.clbValueFields.Size = new System.Drawing.Size(159, 140);
             this.clbValueFields.TabIndex = 7;
             this.clbValueFields.SelectedIndexChanged += new System.EventHandler(this.clbValueFields_SelectedIndexChanged);
             // 
@@ -147,9 +149,9 @@ namespace PptExcelSync
             // 
             this.clbAggregations.FormattingEnabled = true;
             this.clbAggregations.Location = new System.Drawing.Point(208, 155);
-            this.clbAggregations.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.clbAggregations.Margin = new System.Windows.Forms.Padding(4);
             this.clbAggregations.Name = "clbAggregations";
-            this.clbAggregations.Size = new System.Drawing.Size(159, 106);
+            this.clbAggregations.Size = new System.Drawing.Size(159, 140);
             this.clbAggregations.TabIndex = 8;
             // 
             // cmbChartType
@@ -163,7 +165,7 @@ namespace PptExcelSync
             "Bar",
             "Pie"});
             this.cmbChartType.Location = new System.Drawing.Point(129, 27);
-            this.cmbChartType.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.cmbChartType.Margin = new System.Windows.Forms.Padding(4);
             this.cmbChartType.Name = "cmbChartType";
             this.cmbChartType.Size = new System.Drawing.Size(160, 24);
             this.cmbChartType.TabIndex = 9;
@@ -182,9 +184,9 @@ namespace PptExcelSync
             // txtFieldName
             // 
             this.txtFieldName.Location = new System.Drawing.Point(199, 23);
-            this.txtFieldName.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.txtFieldName.Margin = new System.Windows.Forms.Padding(4);
             this.txtFieldName.Name = "txtFieldName";
-            this.txtFieldName.Size = new System.Drawing.Size(132, 22);
+            this.txtFieldName.Size = new System.Drawing.Size(173, 22);
             this.txtFieldName.TabIndex = 12;
             // 
             // label5
@@ -200,7 +202,7 @@ namespace PptExcelSync
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(8, 75);
+            this.label6.Location = new System.Drawing.Point(8, 60);
             this.label6.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(90, 16);
@@ -209,16 +211,16 @@ namespace PptExcelSync
             // 
             // txtFormula
             // 
-            this.txtFormula.Location = new System.Drawing.Point(199, 66);
-            this.txtFormula.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.txtFormula.Location = new System.Drawing.Point(199, 53);
+            this.txtFormula.Margin = new System.Windows.Forms.Padding(4);
             this.txtFormula.Name = "txtFormula";
-            this.txtFormula.Size = new System.Drawing.Size(132, 22);
+            this.txtFormula.Size = new System.Drawing.Size(173, 22);
             this.txtFormula.TabIndex = 15;
             // 
             // btnAddField
             // 
-            this.btnAddField.Location = new System.Drawing.Point(199, 119);
-            this.btnAddField.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnAddField.Location = new System.Drawing.Point(272, 92);
+            this.btnAddField.Margin = new System.Windows.Forms.Padding(4);
             this.btnAddField.Name = "btnAddField";
             this.btnAddField.Size = new System.Drawing.Size(100, 28);
             this.btnAddField.TabIndex = 16;
@@ -244,9 +246,9 @@ namespace PptExcelSync
             this.grpConditionalFormatting.Controls.Add(this.label8);
             this.grpConditionalFormatting.Controls.Add(this.label7);
             this.grpConditionalFormatting.Location = new System.Drawing.Point(16, 193);
-            this.grpConditionalFormatting.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpConditionalFormatting.Margin = new System.Windows.Forms.Padding(4);
             this.grpConditionalFormatting.Name = "grpConditionalFormatting";
-            this.grpConditionalFormatting.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpConditionalFormatting.Padding = new System.Windows.Forms.Padding(4);
             this.grpConditionalFormatting.Size = new System.Drawing.Size(413, 204);
             this.grpConditionalFormatting.TabIndex = 17;
             this.grpConditionalFormatting.TabStop = false;
@@ -257,15 +259,15 @@ namespace PptExcelSync
             this.lstRules.FormattingEnabled = true;
             this.lstRules.ItemHeight = 16;
             this.lstRules.Location = new System.Drawing.Point(8, 110);
-            this.lstRules.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.lstRules.Margin = new System.Windows.Forms.Padding(4);
             this.lstRules.Name = "lstRules";
-            this.lstRules.Size = new System.Drawing.Size(245, 68);
+            this.lstRules.Size = new System.Drawing.Size(245, 84);
             this.lstRules.TabIndex = 8;
             // 
             // btnDeleteRule
             // 
-            this.btnDeleteRule.Location = new System.Drawing.Point(293, 145);
-            this.btnDeleteRule.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnDeleteRule.Location = new System.Drawing.Point(293, 166);
+            this.btnDeleteRule.Margin = new System.Windows.Forms.Padding(4);
             this.btnDeleteRule.Name = "btnDeleteRule";
             this.btnDeleteRule.Size = new System.Drawing.Size(100, 28);
             this.btnDeleteRule.TabIndex = 7;
@@ -275,8 +277,8 @@ namespace PptExcelSync
             // 
             // btnAddRule
             // 
-            this.btnAddRule.Location = new System.Drawing.Point(293, 110);
-            this.btnAddRule.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnAddRule.Location = new System.Drawing.Point(293, 126);
+            this.btnAddRule.Margin = new System.Windows.Forms.Padding(4);
             this.btnAddRule.Name = "btnAddRule";
             this.btnAddRule.Size = new System.Drawing.Size(100, 28);
             this.btnAddRule.TabIndex = 6;
@@ -286,8 +288,8 @@ namespace PptExcelSync
             // 
             // btnPickColor
             // 
-            this.btnPickColor.Location = new System.Drawing.Point(293, 74);
-            this.btnPickColor.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnPickColor.Location = new System.Drawing.Point(293, 84);
+            this.btnPickColor.Margin = new System.Windows.Forms.Padding(4);
             this.btnPickColor.Name = "btnPickColor";
             this.btnPickColor.Size = new System.Drawing.Size(69, 28);
             this.btnPickColor.TabIndex = 5;
@@ -298,7 +300,7 @@ namespace PptExcelSync
             // txtThreshold
             // 
             this.txtThreshold.Location = new System.Drawing.Point(187, 76);
-            this.txtThreshold.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.txtThreshold.Margin = new System.Windows.Forms.Padding(4);
             this.txtThreshold.Name = "txtThreshold";
             this.txtThreshold.Size = new System.Drawing.Size(67, 22);
             this.txtThreshold.TabIndex = 4;
@@ -313,7 +315,7 @@ namespace PptExcelSync
             "<=",
             "="});
             this.cmbOperator.Location = new System.Drawing.Point(93, 74);
-            this.cmbOperator.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.cmbOperator.Margin = new System.Windows.Forms.Padding(4);
             this.cmbOperator.Name = "cmbOperator";
             this.cmbOperator.Size = new System.Drawing.Size(77, 24);
             this.cmbOperator.TabIndex = 3;
@@ -322,7 +324,7 @@ namespace PptExcelSync
             // 
             this.cmbField.FormattingEnabled = true;
             this.cmbField.Location = new System.Drawing.Point(93, 32);
-            this.cmbField.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.cmbField.Margin = new System.Windows.Forms.Padding(4);
             this.cmbField.Name = "cmbField";
             this.cmbField.Size = new System.Drawing.Size(160, 24);
             this.cmbField.TabIndex = 2;
@@ -349,15 +351,17 @@ namespace PptExcelSync
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.btnRemoveField);
+            this.groupBox1.Controls.Add(this.columnListBox);
             this.groupBox1.Controls.Add(this.label5);
             this.groupBox1.Controls.Add(this.txtFieldName);
             this.groupBox1.Controls.Add(this.txtFormula);
             this.groupBox1.Controls.Add(this.btnAddField);
             this.groupBox1.Controls.Add(this.label6);
             this.groupBox1.Location = new System.Drawing.Point(16, 15);
-            this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.groupBox1.Margin = new System.Windows.Forms.Padding(4);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.groupBox1.Padding = new System.Windows.Forms.Padding(4);
             this.groupBox1.Size = new System.Drawing.Size(413, 167);
             this.groupBox1.TabIndex = 18;
             this.groupBox1.TabStop = false;
@@ -377,13 +381,31 @@ namespace PptExcelSync
             this.groupBox2.Controls.Add(this.clbValueFields);
             this.groupBox2.Controls.Add(this.label3);
             this.groupBox2.Location = new System.Drawing.Point(453, 193);
-            this.groupBox2.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.groupBox2.Margin = new System.Windows.Forms.Padding(4);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.groupBox2.Padding = new System.Windows.Forms.Padding(4);
             this.groupBox2.Size = new System.Drawing.Size(405, 379);
             this.groupBox2.TabIndex = 19;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Generate Chart/Table";
+            // 
+            // cmbYoYColumnField
+            // 
+            this.cmbYoYColumnField.FormattingEnabled = true;
+            this.cmbYoYColumnField.Location = new System.Drawing.Point(129, 98);
+            this.cmbYoYColumnField.Margin = new System.Windows.Forms.Padding(4);
+            this.cmbYoYColumnField.Name = "cmbYoYColumnField";
+            this.cmbYoYColumnField.Size = new System.Drawing.Size(160, 24);
+            this.cmbYoYColumnField.TabIndex = 12;
+            // 
+            // label11
+            // 
+            this.label11.AutoSize = true;
+            this.label11.Location = new System.Drawing.Point(8, 106);
+            this.label11.Name = "label11";
+            this.label11.Size = new System.Drawing.Size(109, 16);
+            this.label11.TabIndex = 11;
+            this.label11.Text = "YoY Comparison";
             // 
             // grpFilters
             // 
@@ -395,9 +417,9 @@ namespace PptExcelSync
             this.grpFilters.Controls.Add(this.label9);
             this.grpFilters.Controls.Add(this.label4);
             this.grpFilters.Location = new System.Drawing.Point(16, 414);
-            this.grpFilters.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpFilters.Margin = new System.Windows.Forms.Padding(4);
             this.grpFilters.Name = "grpFilters";
-            this.grpFilters.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpFilters.Padding = new System.Windows.Forms.Padding(4);
             this.grpFilters.Size = new System.Drawing.Size(411, 156);
             this.grpFilters.TabIndex = 20;
             this.grpFilters.TabStop = false;
@@ -406,7 +428,7 @@ namespace PptExcelSync
             // btnRemoveFilter
             // 
             this.btnRemoveFilter.Location = new System.Drawing.Point(120, 121);
-            this.btnRemoveFilter.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnRemoveFilter.Margin = new System.Windows.Forms.Padding(4);
             this.btnRemoveFilter.Name = "btnRemoveFilter";
             this.btnRemoveFilter.Size = new System.Drawing.Size(100, 28);
             this.btnRemoveFilter.TabIndex = 6;
@@ -417,7 +439,7 @@ namespace PptExcelSync
             // btnAddFilter
             // 
             this.btnAddFilter.Location = new System.Drawing.Point(12, 121);
-            this.btnAddFilter.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnAddFilter.Margin = new System.Windows.Forms.Padding(4);
             this.btnAddFilter.Name = "btnAddFilter";
             this.btnAddFilter.Size = new System.Drawing.Size(100, 28);
             this.btnAddFilter.TabIndex = 5;
@@ -430,7 +452,7 @@ namespace PptExcelSync
             this.lstFilters.FormattingEnabled = true;
             this.lstFilters.ItemHeight = 16;
             this.lstFilters.Location = new System.Drawing.Point(252, 12);
-            this.lstFilters.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.lstFilters.Margin = new System.Windows.Forms.Padding(4);
             this.lstFilters.Name = "lstFilters";
             this.lstFilters.Size = new System.Drawing.Size(149, 132);
             this.lstFilters.TabIndex = 4;
@@ -439,7 +461,7 @@ namespace PptExcelSync
             // 
             this.cmbFilterValue.FormattingEnabled = true;
             this.cmbFilterValue.Location = new System.Drawing.Point(56, 65);
-            this.cmbFilterValue.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.cmbFilterValue.Margin = new System.Windows.Forms.Padding(4);
             this.cmbFilterValue.Name = "cmbFilterValue";
             this.cmbFilterValue.Size = new System.Drawing.Size(160, 24);
             this.cmbFilterValue.TabIndex = 3;
@@ -448,7 +470,7 @@ namespace PptExcelSync
             // 
             this.cmbFilterField.FormattingEnabled = true;
             this.cmbFilterField.Location = new System.Drawing.Point(55, 27);
-            this.cmbFilterField.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.cmbFilterField.Margin = new System.Windows.Forms.Padding(4);
             this.cmbFilterField.Name = "cmbFilterField";
             this.cmbFilterField.Size = new System.Drawing.Size(160, 24);
             this.cmbFilterField.TabIndex = 2;
@@ -483,9 +505,9 @@ namespace PptExcelSync
             this.groupBox3.Controls.Add(this.lstDatasetFiles);
             this.groupBox3.Controls.Add(this.btnAddFiles);
             this.groupBox3.Location = new System.Drawing.Point(453, 15);
-            this.groupBox3.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.groupBox3.Margin = new System.Windows.Forms.Padding(4);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.groupBox3.Padding = new System.Windows.Forms.Padding(4);
             this.groupBox3.Size = new System.Drawing.Size(405, 167);
             this.groupBox3.TabIndex = 21;
             this.groupBox3.TabStop = false;
@@ -505,15 +527,15 @@ namespace PptExcelSync
             // 
             this.cmbColumnField.FormattingEnabled = true;
             this.cmbColumnField.Location = new System.Drawing.Point(85, 60);
-            this.cmbColumnField.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.cmbColumnField.Margin = new System.Windows.Forms.Padding(4);
             this.cmbColumnField.Name = "cmbColumnField";
             this.cmbColumnField.Size = new System.Drawing.Size(160, 24);
             this.cmbColumnField.TabIndex = 5;
             // 
             // btnMergeFiles
             // 
-            this.btnMergeFiles.Location = new System.Drawing.Point(267, 83);
-            this.btnMergeFiles.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnMergeFiles.Location = new System.Drawing.Point(267, 92);
+            this.btnMergeFiles.Margin = new System.Windows.Forms.Padding(4);
             this.btnMergeFiles.Name = "btnMergeFiles";
             this.btnMergeFiles.Size = new System.Drawing.Size(100, 28);
             this.btnMergeFiles.TabIndex = 4;
@@ -523,8 +545,8 @@ namespace PptExcelSync
             // 
             // btnRemoveFile
             // 
-            this.btnRemoveFile.Location = new System.Drawing.Point(267, 119);
-            this.btnRemoveFile.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnRemoveFile.Location = new System.Drawing.Point(267, 128);
+            this.btnRemoveFile.Margin = new System.Windows.Forms.Padding(4);
             this.btnRemoveFile.Name = "btnRemoveFile";
             this.btnRemoveFile.Size = new System.Drawing.Size(100, 28);
             this.btnRemoveFile.TabIndex = 3;
@@ -537,7 +559,7 @@ namespace PptExcelSync
             this.lstDatasetFiles.FormattingEnabled = true;
             this.lstDatasetFiles.ItemHeight = 16;
             this.lstDatasetFiles.Location = new System.Drawing.Point(12, 92);
-            this.lstDatasetFiles.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.lstDatasetFiles.Margin = new System.Windows.Forms.Padding(4);
             this.lstDatasetFiles.Name = "lstDatasetFiles";
             this.lstDatasetFiles.Size = new System.Drawing.Size(233, 68);
             this.lstDatasetFiles.TabIndex = 2;
@@ -545,7 +567,7 @@ namespace PptExcelSync
             // btnAddFiles
             // 
             this.btnAddFiles.Location = new System.Drawing.Point(12, 25);
-            this.btnAddFiles.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnAddFiles.Margin = new System.Windows.Forms.Padding(4);
             this.btnAddFiles.Name = "btnAddFiles";
             this.btnAddFiles.Size = new System.Drawing.Size(100, 28);
             this.btnAddFiles.TabIndex = 1;
@@ -553,23 +575,26 @@ namespace PptExcelSync
             this.btnAddFiles.UseVisualStyleBackColor = true;
             this.btnAddFiles.Click += new System.EventHandler(this.btnAddFiles_Click);
             // 
-            // label11
+            // columnListBox
             // 
-            this.label11.AutoSize = true;
-            this.label11.Location = new System.Drawing.Point(7, 101);
-            this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(109, 16);
-            this.label11.TabIndex = 11;
-            this.label11.Text = "YoY Comparison";
+            this.columnListBox.FormattingEnabled = true;
+            this.columnListBox.ItemHeight = 16;
+            this.columnListBox.Location = new System.Drawing.Point(8, 91);
+            this.columnListBox.Margin = new System.Windows.Forms.Padding(4);
+            this.columnListBox.Name = "columnListBox";
+            this.columnListBox.Size = new System.Drawing.Size(245, 68);
+            this.columnListBox.TabIndex = 17;
             // 
-            // cmbYoYColumnField
+            // btnRemoveField
             // 
-            this.cmbYoYColumnField.FormattingEnabled = true;
-            this.cmbYoYColumnField.Location = new System.Drawing.Point(129, 98);
-            this.cmbYoYColumnField.Margin = new System.Windows.Forms.Padding(4);
-            this.cmbYoYColumnField.Name = "cmbYoYColumnField";
-            this.cmbYoYColumnField.Size = new System.Drawing.Size(160, 24);
-            this.cmbYoYColumnField.TabIndex = 12;
+            this.btnRemoveField.Location = new System.Drawing.Point(272, 128);
+            this.btnRemoveField.Margin = new System.Windows.Forms.Padding(4);
+            this.btnRemoveField.Name = "btnRemoveField";
+            this.btnRemoveField.Size = new System.Drawing.Size(100, 28);
+            this.btnRemoveField.TabIndex = 18;
+            this.btnRemoveField.Text = "Remove";
+            this.btnRemoveField.UseVisualStyleBackColor = true;
+            this.btnRemoveField.Click += new System.EventHandler(this.btnRemoveField_Click);
             // 
             // Pivot
             // 
@@ -581,7 +606,7 @@ namespace PptExcelSync
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.grpConditionalFormatting);
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "Pivot";
             this.Text = "Pivot";
             this.grpConditionalFormatting.ResumeLayout(false);
@@ -645,5 +670,7 @@ namespace PptExcelSync
         private Label label10;
         private ComboBox cmbYoYColumnField;
         private Label label11;
+        private ListBox columnListBox;
+        private Button btnRemoveField;
     }
 }

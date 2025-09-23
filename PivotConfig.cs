@@ -19,6 +19,7 @@ namespace PptExcelSync
         public StyleConfig Styles { get; set; } = new StyleConfig();
     }
 
+
     public class StyleConfig
     {
         // Table styles
