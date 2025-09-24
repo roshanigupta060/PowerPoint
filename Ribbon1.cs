@@ -1126,7 +1126,7 @@ namespace PptExcelSync
                     table.Columns[c + 1].Width = colWidths[c] * scale;
                 }
 
-                // --- ✅ Update tag + alt text ---
+                // --- Update tag + alt text ---
                 newShape.Tags.Delete("ChartMakerMeta");
                 newShape.Tags.Add("ChartMakerMeta", JsonConvert.SerializeObject(config));
                 newShape.AlternativeText = "ChartMaker|" + config.DatasetPath;
@@ -1276,11 +1276,11 @@ namespace PptExcelSync
                 {
                     // Option A: prompt user for row index (commented)
                     string idxStr = Microsoft.VisualBasic.Interaction.InputBox("Enter row number to drill-down (1 = header):", "Select Row", "2");
-                    if (int.TryParse(idxStr, out int userRow) && userRow >= 2 && userRow <= tbl.Rows.Count) 
+                    if (int.TryParse(idxStr, out int userRow) && userRow >= 2 && userRow <= tbl.Rows.Count)
                         return tbl.Cell(userRow, 1).Shape.TextFrame.TextRange.Text.Trim();
 
                     // Option B: fallback to first data row
-                   // return tbl.Cell(2, 1).Shape.TextFrame.TextRange.Text?.Trim();
+                    // return tbl.Cell(2, 1).Shape.TextFrame.TextRange.Text?.Trim();
                 }
             }
             catch { /* ignore and return null below */ }
@@ -1288,7 +1288,7 @@ namespace PptExcelSync
             return null;
         }
 
-
+      
         private void ShowDrillDownWindow(string rowValue, string rowField)
         {
             // Active file ka dataset nikaalo
@@ -1318,6 +1318,134 @@ namespace PptExcelSync
                 drillForm.ShowDialog();
             }
         }
+
+        private void btnRefreshAll_Click(object sender, Microsoft.Office.Tools.Ribbon.RibbonControlEventArgs e)
+    {
+        try
+        {
+            var app = Globals.ThisAddIn.Application;
+            var pres = app.ActivePresentation;
+            if (pres == null)
+            {
+                MessageBox.Show("No active presentation to refresh.");
+                return;
+            }
+
+            int updatedCount = 0;
+            int skippedCount = 0;
+            var errors = new List<string>();
+
+            // Iterate slides and shapes (1-based COM collections)
+            for (int s = 1; s <= pres.Slides.Count; s++)
+            {
+                var slide = pres.Slides[s];
+                // iterate forward or backward is fine. we'll go forward.
+                for (int i = 1; i <= slide.Shapes.Count; i++)
+                {
+                    var shape = slide.Shapes[i];
+                    string metaJson = null;
+                    try
+                    {
+                        metaJson = shape.Tags["ChartMakerMeta"];
+                    }
+                    catch { metaJson = null; }
+
+                    if (string.IsNullOrWhiteSpace(metaJson))
+                    {
+                        // not a ChartMaker shape
+                        skippedCount++;
+                        continue;
+                    }
+
+                    PivotConfig cfg = null;
+                    try
+                    {
+                        cfg = JsonConvert.DeserializeObject<PivotConfig>(metaJson);
+                    }
+                    catch (Exception ex)
+                    {
+                        skippedCount++;
+                        errors.Add($"Invalid metadata on shape (slide {s}, shape {i}): {ex.Message}");
+                        continue;
+                    }
+
+                    if (cfg == null || string.IsNullOrEmpty(cfg.DatasetPath))
+                    {
+                        skippedCount++;
+                        continue;
+                    }
+
+                    if (!File.Exists(cfg.DatasetPath))
+                    {
+                        // missing dataset — skip but report
+                        skippedCount++;
+                        errors.Add($"Dataset not found: {cfg.DatasetPath} (slide {s}, shape {i})");
+                        continue;
+                    }
+
+                    try
+                    {
+                        // 1) Load dataset (synchronous; COM must stay on UI thread)
+                        var dt = new DatasetManager().LoadDataset(cfg.DatasetPath);
+
+                        // 2) Reapply calculated fields if any
+                        if (cfg.CalculatedFields != null && cfg.CalculatedFields.Count > 0)
+                        {
+                            var ph = new PivotHelper();
+                            foreach (var cf in cfg.CalculatedFields)
+                            {
+                                if (!dt.Columns.Contains(cf.FieldName))
+                                    ph.AddCalculatedField(dt, cf.FieldName, cf.Formula);
+                            }
+                        }
+
+                        // 3) Build pivot (uses your existing CreatePivot method)
+                        // Assumes CreatePivot signature: CreatePivot(dt, rowField, valueFields, aggFuncs, columnField, filters)
+                        var pivot = Globals.Ribbons.Ribbon1.CreatePivot(
+                            dt,
+                            cfg.RowField,
+                            cfg.ValueFields,
+                            cfg.Aggregations,
+                            null,
+                            cfg.Filters
+                        );
+
+                        // 4) Update shape in-place
+                        if (shape.Type == MsoShapeType.msoChart)
+                        {
+                            Globals.Ribbons.Ribbon1.UpdatePivotChartInPowerPoint(shape, pivot, cfg);
+                            updatedCount++;
+                        }
+                        else if (shape.HasTable == MsoTriState.msoTrue)
+                        {
+                            Globals.Ribbons.Ribbon1.UpdatePivotTableInPowerPoint(shape, pivot, cfg);
+                            updatedCount++;
+                        }
+                        else
+                        {
+                            // unknown shape type; skip
+                            skippedCount++;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        skippedCount++;
+                        errors.Add($"Error updating shape on slide {s}, shape {i}: {ex.Message}");
+                        // don't rethrow—we continue to attempt other shapes
+                    }
+                }
+            }
+
+            var msg = $"Refresh complete.\nUpdated: {updatedCount}\nSkipped: {skippedCount}";
+            if (errors.Any()) msg += $"\n\nErrors:\n- {string.Join("\n- ", errors.Take(10))}" + (errors.Count > 10 ? $"\n...({errors.Count - 10} more)" : "");
+            MessageBox.Show(msg, "Refresh All");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Refresh All failed: " + ex.Message);
+        }
+    }
+
 
     }
 }

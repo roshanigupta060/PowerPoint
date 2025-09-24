@@ -43,13 +43,14 @@
             this.btnUploadExcel = this.Factory.CreateRibbonButton();
             this.ddlDatasets = this.Factory.CreateRibbonDropDown();
             this.ddlChartType = this.Factory.CreateRibbonDropDown();
-            this.btnPivotView = this.Factory.CreateRibbonButton();
-            this.btnInsertChart_Click = this.Factory.CreateRibbonButton();
             this.btnInsertTable_Click = this.Factory.CreateRibbonButton();
-            this.btnCreateChart_Click = this.Factory.CreateRibbonButton();
             this.btnEditWithChartMaker = this.Factory.CreateRibbonButton();
+            this.btnCreateChart_Click = this.Factory.CreateRibbonButton();
+            this.btnInsertChart_Click = this.Factory.CreateRibbonButton();
             this.btnDrillDown = this.Factory.CreateRibbonButton();
+            this.btnPivotView = this.Factory.CreateRibbonButton();
             this.tab1 = this.Factory.CreateRibbonTab();
+            this.btnRefreshAll = this.Factory.CreateRibbonButton();
             this.group1.SuspendLayout();
             this.tab1.SuspendLayout();
             this.SuspendLayout();
@@ -65,6 +66,7 @@
             this.group1.Items.Add(this.btnInsertChart_Click);
             this.group1.Items.Add(this.btnDrillDown);
             this.group1.Items.Add(this.btnPivotView);
+            this.group1.Items.Add(this.btnRefreshAll);
             this.group1.Name = "group1";
             // 
             // btnUploadExcel
@@ -99,29 +101,11 @@
             this.ddlChartType.Name = "ddlChartType";
             this.ddlChartType.SelectionChanged += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.ddlChartType_SelectionChanged);
             // 
-            // btnPivotView
-            // 
-            this.btnPivotView.Label = "Pivot View";
-            this.btnPivotView.Name = "btnPivotView";
-            this.btnPivotView.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnPivotView_Click);
-            // 
-            // btnInsertChart_Click
-            // 
-            this.btnInsertChart_Click.Label = "Create Chart";
-            this.btnInsertChart_Click.Name = "btnInsertChart_Click";
-            this.btnInsertChart_Click.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnInsertChart_Click_Click);
-            // 
             // btnInsertTable_Click
             // 
             this.btnInsertTable_Click.Label = "Create Table";
             this.btnInsertTable_Click.Name = "btnInsertTable_Click";
             this.btnInsertTable_Click.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnInsertTable_Click_Click);
-            // 
-            // btnCreateChart_Click
-            // 
-            this.btnCreateChart_Click.Label = "Generate Chart";
-            this.btnCreateChart_Click.Name = "btnCreateChart_Click";
-            this.btnCreateChart_Click.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnCreateChart_Click_Click);
             // 
             // btnEditWithChartMaker
             // 
@@ -129,11 +113,29 @@
             this.btnEditWithChartMaker.Name = "btnEditWithChartMaker";
             this.btnEditWithChartMaker.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnEditWithChartMaker_ClickAsync);
             // 
+            // btnCreateChart_Click
+            // 
+            this.btnCreateChart_Click.Label = "Generate Chart";
+            this.btnCreateChart_Click.Name = "btnCreateChart_Click";
+            this.btnCreateChart_Click.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnCreateChart_Click_Click);
+            // 
+            // btnInsertChart_Click
+            // 
+            this.btnInsertChart_Click.Label = "Create Chart";
+            this.btnInsertChart_Click.Name = "btnInsertChart_Click";
+            this.btnInsertChart_Click.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnInsertChart_Click_Click);
+            // 
             // btnDrillDown
             // 
             this.btnDrillDown.Label = "Drill Down";
             this.btnDrillDown.Name = "btnDrillDown";
             this.btnDrillDown.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnDrillDown_Click);
+            // 
+            // btnPivotView
+            // 
+            this.btnPivotView.Label = "Pivot View";
+            this.btnPivotView.Name = "btnPivotView";
+            this.btnPivotView.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnPivotView_Click);
             // 
             // tab1
             // 
@@ -141,6 +143,12 @@
             this.tab1.Groups.Add(this.group1);
             this.tab1.Label = "TabAddIns";
             this.tab1.Name = "tab1";
+            // 
+            // btnRefreshAll
+            // 
+            this.btnRefreshAll.Label = "Refresh All";
+            this.btnRefreshAll.Name = "btnRefreshAll";
+            this.btnRefreshAll.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btnRefreshAll_Click);
             // 
             // Ribbon1
             // 
@@ -171,6 +179,7 @@
         internal Microsoft.Office.Tools.Ribbon.RibbonButton btnPivotView;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton btnEditWithChartMaker;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton btnDrillDown;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton btnRefreshAll;
     }
 
     partial class ThisRibbonCollection
