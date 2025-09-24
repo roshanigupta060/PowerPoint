@@ -17,6 +17,7 @@ namespace PptExcelSync
         public Dictionary<string, string>  Filters { get; set; } = new Dictionary<string, string>();
         public List<ConditionalRule> ConditionalRules { get; set; } = new List<ConditionalRule>();
         public StyleConfig Styles { get; set; } = new StyleConfig();
+        public string UniqueId { get; set; }
     }
 
 
