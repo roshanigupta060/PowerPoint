@@ -37,7 +37,7 @@ namespace PptExcelSync
 
         private void Ribbon1_Load(object sender, RibbonUIEventArgs e)
         {
-            LoadDatasetsIntoDropdown();
+                LoadDatasetsIntoDropdown();
         }
 
         private void btnUploadExcel_Click(object sender, RibbonControlEventArgs e)
@@ -218,8 +218,8 @@ namespace PptExcelSync
             }
 
             // Save chart as image
-            string chartPath = Path.Combine(Path.GetTempPath(), "chart.png");
-            chart.SaveImage(chartPath, ChartImageFormat.Png);
+            //string chartPath = Path.Combine(Path.GetTempPath(), "chart.png");
+            //chart.SaveImage(chartPath, ChartImageFormat.Png);
 
             // Insert into PowerPoint
             var app = Globals.ThisAddIn.Application;
@@ -227,10 +227,16 @@ namespace PptExcelSync
                 app.ActivePresentation.Slides.Count + 1,
                 Microsoft.Office.Interop.PowerPoint.PpSlideLayout.ppLayoutBlank);
 
-            slide.Shapes.AddPicture(chartPath,
-                Microsoft.Office.Core.MsoTriState.msoFalse,
-                Microsoft.Office.Core.MsoTriState.msoCTrue,
-                100, 100, 600, 300);
+            //slide.Shapes.AddPicture(chartPath,
+            //    Microsoft.Office.Core.MsoTriState.msoFalse,
+            //    Microsoft.Office.Core.MsoTriState.msoCTrue,
+            //    100, 100, 600, 300);
+
+           // if (config != null)
+            {
+                slide.Tags.Delete("ChartMakerMeta");
+                slide.Tags.Add("ChartMakerMeta", JsonConvert.SerializeObject(app));
+            }
         }
 
         private void InsertTableFromDataset(string filePath, string chartType)
@@ -257,7 +263,8 @@ namespace PptExcelSync
                 }
 
                 int rows = dt.Rows.Count + 1, cols = dt.Columns.Count;
-                var table = slide.Shapes.AddTable(rows, cols, 50, 50, 600, 300).Table;
+                var shapeTable = slide.Shapes.AddTable(rows, cols, 50, 50, 600, 300);
+                var table = shapeTable.Table;
 
                 // headers
                 for (int c = 0; c < cols; c++)
@@ -265,12 +272,6 @@ namespace PptExcelSync
                     var cell = table.Cell(1, c + 1);
 
                     cell.Shape.TextFrame.TextRange.Text = dt.Columns[c].ColumnName;
-
-                    // ✅ Apply header styling
-                    //cell.Shape.TextFrame.TextRange.Font.Bold = Microsoft.Office.Core.MsoTriState.msoTrue;
-                    //cell.Shape.TextFrame.TextRange.Font.Size = 14;
-                    //cell.Shape.TextFrame.TextRange.Font.Name = "Calibri";
-                    //cell.Shape.Fill.ForeColor.RGB = System.Drawing.Color.AliceBlue.ToArgb();
                 }
 
 
@@ -281,11 +282,22 @@ namespace PptExcelSync
                     {
                         var cell = table.Cell(r + 2, c + 1);
                         cell.Shape.TextFrame.TextRange.Text = dt.Rows[r][c]?.ToString();
-                        //cell.Shape.TextFrame.TextRange.Font.Size = 12;
-                        //cell.Shape.TextFrame.TextRange.Font.Name = "Calibri";
                     }
                 }
-                
+
+                var config = new PivotConfig
+                {
+                    DatasetPath = filePath,
+                    ChartTypeName    = chartType,  // not really needed for table, but good for consistency
+                    RowField = null,
+                    ValueFields = null,
+                    Aggregations = null
+                };
+
+                shapeTable.Tags.Delete("ChartMakerMeta");
+                shapeTable.Tags.Add("ChartMakerMeta", JsonConvert.SerializeObject(config));
+                shapeTable.AlternativeText = "ChartMaker|" + config.DatasetPath;
+
             }
             catch (Exception ex)
             {
@@ -805,7 +817,7 @@ namespace PptExcelSync
             {
                 var app = Globals.ThisAddIn.Application;
 
-                // ✅ Step 1: Ensure user selected a shape
+                //  Step 1: Ensure user selected a shape
                 if ( app.ActiveWindow == null || app.ActiveWindow.Selection == null ||
                     app.ActiveWindow.Selection.Type == PowerPoint.PpSelectionType.ppSelectionNone)
                 {
@@ -902,7 +914,7 @@ namespace PptExcelSync
             }
         }
 
-        public void UpdatePivotChartInPowerPoint(PowerPoint.Shape chartShape,DataTable pivotTable, PivotConfig config)
+        public PowerPoint.Shape UpdatePivotChartInPowerPoint(PowerPoint.Shape chartShape,DataTable pivotTable, PivotConfig config)
         {
             Excel.Workbook workbook = null;
             Excel.Worksheet sheet = null;
@@ -1008,18 +1020,26 @@ namespace PptExcelSync
                     }
 
                     chart.Refresh();
+              
+                    chartShape.Tags.Delete("ChartMakerMeta");
+                    chartShape.Tags.Add("ChartMakerMeta", JsonConvert.SerializeObject(config));
+                    chartShape.AlternativeText = "ChartMaker|" + config.DatasetPath;
+                    
+
                 }
 
                 // Close the embedded workbook (non-modal) and release COMs
                 try
                 {
                     workbook.Close(false);
+                    return chartShape;
                 }
-                catch { /* ignore errors closing embedded workbook */ }
+                catch { /* ignore errors closing embedded workbook */  return chartShape; }
             }
             catch (Exception ex)
             {
                 System.Windows.Forms.MessageBox.Show("Error updating chart: " + ex.Message);
+                return chartShape;
             }
             finally
             {
@@ -1035,6 +1055,7 @@ namespace PptExcelSync
                 // hint GC for final cleanup
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
+                
             }
         }
         public PowerPoint.Shape UpdatePivotTableInPowerPoint( PowerPoint.Shape tableShape,
@@ -1131,12 +1152,12 @@ namespace PptExcelSync
                 newShape.Tags.Add("ChartMakerMeta", JsonConvert.SerializeObject(config));
                 newShape.AlternativeText = "ChartMaker|" + config.DatasetPath;
 
-                return tableShape;
+                return newShape;
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error updating table: " + ex.Message);
-                return tableShape;
+                return newShape;
             }
         }
 
@@ -1173,7 +1194,7 @@ namespace PptExcelSync
                         return;
                     }
 
-                    // ✅ Get PivotConfig from metadata (common for both table and chart)
+                    //  Get PivotConfig from metadata (common for both table and chart)
                     string metaJson = shape.Tags["ChartMakerMeta"];
                     if (string.IsNullOrEmpty(metaJson))
                     {
@@ -1193,7 +1214,7 @@ namespace PptExcelSync
                             return;
                         }
 
-                        // ✅ Use dynamic RowField
+                        //  Use dynamic RowField
                         ShowDrillDownWindow(rowValue, cfg.RowField);
                         return;
                     }
@@ -1387,8 +1408,10 @@ namespace PptExcelSync
                     {
                         // 1) Load dataset (synchronous; COM must stay on UI thread)
                         var dt = new DatasetManager().LoadDataset(cfg.DatasetPath);
+                           // var dt = new DatasetManager().LoadDataset(cfg.DatasetPath, forceReload: true);
 
-                        // 2) Reapply calculated fields if any
+
+                            // 2) Reapply calculated fields if any
                         if (cfg.CalculatedFields != null && cfg.CalculatedFields.Count > 0)
                         {
                             var ph = new PivotHelper();
@@ -1401,31 +1424,38 @@ namespace PptExcelSync
 
                         // 3) Build pivot (uses your existing CreatePivot method)
                         // Assumes CreatePivot signature: CreatePivot(dt, rowField, valueFields, aggFuncs, columnField, filters)
-                        var pivot = Globals.Ribbons.Ribbon1.CreatePivot(
-                            dt,
-                            cfg.RowField,
-                            cfg.ValueFields,
-                            cfg.Aggregations,
-                            null,
-                            cfg.Filters
-                        );
+                        
 
-                        // 4) Update shape in-place
-                        if (shape.Type == MsoShapeType.msoChart)
-                        {
-                            Globals.Ribbons.Ribbon1.UpdatePivotChartInPowerPoint(shape, pivot, cfg);
-                            updatedCount++;
-                        }
-                        else if (shape.HasTable == MsoTriState.msoTrue)
-                        {
-                            Globals.Ribbons.Ribbon1.UpdatePivotTableInPowerPoint(shape, pivot, cfg);
-                            updatedCount++;
-                        }
-                        else
-                        {
-                            // unknown shape type; skip
-                            skippedCount++;
-                        }
+                            if(cfg.RowField != null)
+                            {
+                                var pivot = Globals.Ribbons.Ribbon1.CreatePivot(
+                                  dt, cfg.RowField,
+                                  cfg.ValueFields,
+                                  cfg.Aggregations,
+                                  null,
+                                   cfg.Filters
+                                 );
+                                // 4) Update shape in-place
+                                if (shape.Type == MsoShapeType.msoChart)
+                                {
+                                    shape = UpdatePivotChartInPowerPoint(shape, pivot, cfg);
+                                    updatedCount++;
+                                }
+                                else if (shape.HasTable == MsoTriState.msoTrue)
+                                {
+                                    shape = UpdatePivotTableInPowerPoint(shape, pivot, cfg);
+                                   
+                                    updatedCount++;
+                                }
+                                else
+                                {
+                                    // unknown shape type; skip
+                                    skippedCount++;
+                                }
+                            }
+                       
+
+                      
                     }
                     catch (Exception ex)
                     {
@@ -1436,7 +1466,22 @@ namespace PptExcelSync
                 }
             }
 
-            var msg = $"Refresh complete.\nUpdated: {updatedCount}\nSkipped: {skippedCount}";
+
+                //if (shape.HasTable == MsoTriState.msoTrue)
+                {
+                    string filePath = ddlDatasets.SelectedItem.Tag.ToString();
+
+                    if (filePath == "select")
+                    {
+                        MessageBox.Show("Select file");
+                        return;
+                    }
+                        
+                    InsertTableFromDataset(filePath, "Table");
+
+                }
+
+                var msg = $"Refresh complete.\nUpdated: {updatedCount}\nSkipped: {skippedCount}";
             if (errors.Any()) msg += $"\n\nErrors:\n- {string.Join("\n- ", errors.Take(10))}" + (errors.Count > 10 ? $"\n...({errors.Count - 10} more)" : "");
             MessageBox.Show(msg, "Refresh All");
         }
