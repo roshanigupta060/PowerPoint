@@ -20,6 +20,7 @@ namespace PptExcelSync
        // private DataTable _currentData;           // merged or single dataset currently in the form
         private List<string> _selectedFiles = new List<string>();
         public string columnField => cmbColumnField.SelectedItem?.ToString();
+        public string SelectedRepeatByField => cmbRepeatBy.SelectedItem?.ToString();
         public string SelectedRowField => cmbRowField.SelectedItem?.ToString();
         public string SelectedChartTypeField => cmbChartType.SelectedItem?.ToString();
         public string selectedYOYCompField => cmbYoYColumnField.SelectedItem != null ? cmbYoYColumnField.SelectedItem.ToString() : "-- none --";
@@ -50,6 +51,7 @@ namespace PptExcelSync
             InitializeComponent();
             InitializeValueContextMenu();
             PopulateDropdowns(_data);
+            LoadDatasetColumns(_data);
         }
 
         private void btnPickColor_Click(object sender, EventArgs e)
@@ -208,56 +210,6 @@ namespace PptExcelSync
         }
 
 
-        //private void PopulateDropdowns(DataTable data)
-        //{
-        //    cmbRowField.Items.Clear();
-        //    clbValueFields.Items.Clear();
-        //    cmbField.Items.Clear();
-
-        //    foreach (DataColumn col in data.Columns)
-        //    {
-        //        bool isNumeric = true;
-
-        //        foreach (DataRow row in data.Rows.Cast<DataRow>().Take(2)) // check first 5 rows
-        //        {
-        //            var val = row[col.ColumnName]?.ToString();
-        //            if (string.IsNullOrWhiteSpace(val)) continue;
-
-        //            if (!double.TryParse(val, out _))
-        //            {
-        //                isNumeric = false;
-        //                break;
-        //            }
-        //        }
-
-        //        if (isNumeric)
-        //        {
-        //            clbValueFields.Items.Add(col.ColumnName);
-        //            cmbField.Items.Add(col.ColumnName);
-        //        }
-        //        else
-        //        {
-        //            cmbRowField.Items.Add(col.ColumnName);
-        //        }
-        //    }
-
-        //    // Default selections
-        //    if (cmbRowField.Items.Count > 0) cmbRowField.SelectedIndex = 0;
-        //    if (clbValueFields.Items.Count > 0) clbValueFields.SelectedIndex = 0;
-
-        //    // Aggregations
-        //    clbAggregations.Items.Clear();
-        //    clbAggregations.Items.AddRange(new string[] { "Sum", "Average", "Count", "Max", "Min" });
-
-        //    // Fill filter fields with all columns
-        //    cmbFilterField.Items.Clear();
-        //    foreach (DataColumn col in data.Columns)
-        //    {
-        //        cmbFilterField.Items.Add(col.ColumnName);
-        //    }
-
-        //}
-
         private void btnGenerate_Click(object sender, EventArgs e)
         {
             if (SelectedRowField == null || SelectedChartTypeField == null || SelectedValueFields.Count == 0 || SelectedAggregations.Count == 0)
@@ -410,7 +362,7 @@ namespace PptExcelSync
             FilePath = cfg.DatasetPath;
 
             // 2) set UI selections (Row dropdown, checked Value fields, Aggregations, ChartType, Filters, Calculated Fields)
-            if (!string.IsNullOrEmpty(cfg.RowField) && cmbRowField.Items.Contains(cfg.RowField))
+            if (!string.IsNullOrEmpty(cfg.RowField))
                 cmbRowField.SelectedItem = cfg.RowField;
 
             // Values: if using a CheckedListBox for values
@@ -450,6 +402,10 @@ namespace PptExcelSync
                 string color = ColorTranslator.ToHtml(f.Color);
                 lstRules.Items.Add($"{f.Field} {f.Operator} {f.Threshold} => {color}");
             }
+
+            // RepeatBy set karo
+            if (!string.IsNullOrEmpty(cfg.RepeatBy))
+                cmbRepeatBy.SelectedItem = cfg.RepeatBy;
         }
 
         public PivotConfig GetConfig()
@@ -462,7 +418,8 @@ namespace PptExcelSync
                 Aggregations = clbAggregations.CheckedItems.Cast<string>().ToList(),
                 ChartTypeName = cmbChartType.SelectedItem?.ToString(),
                 Filters = GetFilters(),
-                ConditionalRules = GetConditionalRules()
+                ConditionalRules = GetConditionalRules(),
+                RepeatBy = cmbRepeatBy.SelectedItem?.ToString()
             };
             cfg.CalculatedFields = GetCalculatedFields();
 
@@ -536,5 +493,21 @@ namespace PptExcelSync
                 txtFormula.Clear();
             }
         }
+
+        private void LoadDatasetColumns(DataTable dt)
+        {
+            // Populate existing controls...
+            cmbRowField.Items.Clear();
+            cmbColumnField.Items.Clear();
+            cmbRepeatBy.Items.Clear();
+
+            foreach (DataColumn col in dt.Columns)
+            {
+                cmbRowField.Items.Add(col.ColumnName);
+                cmbColumnField.Items.Add(col.ColumnName);
+                cmbRepeatBy.Items.Add(col.ColumnName);
+            }
+        }
+
     }
 }

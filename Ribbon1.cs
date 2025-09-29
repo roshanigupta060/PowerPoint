@@ -1,4 +1,5 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Vml.Office;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.Office.Core;
 using Microsoft.Office.Interop.Excel;
@@ -390,7 +391,12 @@ namespace PptExcelSync
                 // Insert pivot into PowerPoint
                 string chartType =  form.SelectedChartType.ToString();
 
-                if(chartType != "0")
+                string isRepeatedSelected = form.SelectedRepeatByField;
+
+                if(isRepeatedSelected != null)
+                CreateRepeatViews(dataTable, form, chartType, rules);
+
+                if (chartType != "0")
                   InsertPivotChartIntoPowerPoint(pivot, form.SelectedChartType, form, rules);
                 else
                   InsertTableIntoPowerPoint(pivot, 25, form, rules);
@@ -827,7 +833,7 @@ namespace PptExcelSync
 
                 var shape = app.ActiveWindow.Selection.ShapeRange[1];
 
-                // ✅ Step 2: Get config metadata from shape
+                //  Step 2: Get config metadata from shape
                 string metaJson = shape.Tags["ChartMakerMeta"];
                 if (string.IsNullOrEmpty(metaJson))
                 {
@@ -835,7 +841,7 @@ namespace PptExcelSync
                     return;
                 }
 
-                // ✅ Step 3: Deserialize old config
+                //  Step 3: Deserialize old config
                 var oldConfig = JsonConvert.DeserializeObject<PivotConfig>(metaJson);
 
                 if (string.IsNullOrEmpty(oldConfig.DatasetPath) || !File.Exists(oldConfig.DatasetPath))
@@ -844,13 +850,13 @@ namespace PptExcelSync
                     return;
                 }
 
-                // ✅ Step 4: Reload dataset
+                // Step 4: Reload dataset
                 // var dt = new DatasetManager().LoadExcel(oldConfig.DatasetPath);
 
                 var dt = await Task.Run(() => DatasetCache.GetOrLoad(oldConfig.DatasetPath));
 
 
-                // ✅ Step 5: Reapply calculated fields (if missing in DataTable)
+                //  Step 5: Reapply calculated fields (if missing in DataTable)
                 var ph = new PivotHelper();
                 if (oldConfig.CalculatedFields != null)
                 {
@@ -861,7 +867,7 @@ namespace PptExcelSync
                     }
                 }
 
-                // ✅ Step 6: Open Pivot form with pre-filled config
+                //  Step 6: Open Pivot form with pre-filled config
                 var form = new Pivot(dt, oldConfig.DatasetPath);
                 form.LoadConfig(oldConfig);
 
@@ -883,7 +889,7 @@ namespace PptExcelSync
 
                     var rule = form.GetConditionalRules();
 
-                    // ✅ Step 7: Update existing shape in-place
+                    //  Step 7: Update existing shape in-place
                     if (shape.Type == Office.MsoShapeType.msoChart)
                     {
                         UpdatePivotChartInPowerPoint(shape, newPivot, newConfig);
@@ -898,7 +904,7 @@ namespace PptExcelSync
                         
                     }
                     try
-                    {// ✅ Step 8: Save new config back into shape tag
+                    {//  Step 8: Save new config back into shape tag
                         shape.Tags.Delete("ChartMakerMeta");
                         shape.Tags.Add("ChartMakerMeta", JsonConvert.SerializeObject(newConfig));
                     }
@@ -1490,6 +1496,46 @@ namespace PptExcelSync
             MessageBox.Show("Refresh All failed: " + ex.Message);
         }
     }
+
+        private void CreateRepeatViews(DataTable dt, Pivot form, string chartType, List<ConditionalRule> rules = null)
+        {
+
+           PivotConfig config = form.GetConfig();
+
+            if (string.IsNullOrEmpty(config.RepeatBy))
+            {
+                // Normal pivot
+                if (chartType != "0")
+                    InsertPivotChartIntoPowerPoint(dt, form.SelectedChartType,form, rules);
+                else
+                    InsertTableIntoPowerPoint(dt, 25, form, rules);
+                return;
+            }
+
+            // Distinct values for repeat column
+            var distinctVals = dt.AsEnumerable()
+                .Select(r => r[config.RepeatBy]?.ToString())
+                .Where(v => !string.IsNullOrEmpty(v))
+                .Distinct()
+                .ToList();
+
+            foreach (var val in distinctVals)
+            {
+                var filtered = dt.AsEnumerable()
+                    .Where(r => r[config.RepeatBy]?.ToString() == val)
+                    .CopyToDataTable();
+
+                // Deep copy config for each slide
+                var localConfig = JsonConvert.DeserializeObject<PivotConfig>(
+                    JsonConvert.SerializeObject(config));
+                localConfig.Title = $"{config.Title} - {config.RepeatBy} = {val}";
+
+                if (chartType != "0")
+                    InsertPivotChartIntoPowerPoint(dt, form.SelectedChartType, form, rules);
+                else
+                    InsertTableIntoPowerPoint(dt, 25, form, rules);
+            }
+        }
 
 
     }
