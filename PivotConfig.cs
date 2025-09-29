@@ -12,7 +12,9 @@ namespace PptExcelSync
         public string RowField { get; set; }                 // group-by column
         public List<string> ValueFields { get; set; } = new List<string>();
         public List<string> Aggregations { get; set; } = new List<string>();
-        public string ChartTypeName { get; set; }            // string representation (e.g., "xlColumnClustered")
+        public string ChartTypeName { get; set; } 
+        public string RepeatBy { get; set; }
+        public string Title { get; set; }
         public List<CalculatedFieldInfo> CalculatedFields { get; set; } = new List<CalculatedFieldInfo>();
         public Dictionary<string, string>  Filters { get; set; } = new Dictionary<string, string>();
         public List<ConditionalRule> ConditionalRules { get; set; } = new List<ConditionalRule>();

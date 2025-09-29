@@ -360,6 +360,36 @@
   <ItemGroup>
     <None Include="Resources\upload.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\refreshAll 2025-09-29 070817.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Pivot.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Drill Down.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\DrillDown.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Doc.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Folder.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Chart Type.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Table.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Generate Button.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\editChart.png" />
+  </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
