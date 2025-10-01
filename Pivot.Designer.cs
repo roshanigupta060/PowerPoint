@@ -44,7 +44,6 @@ namespace PptExcelSync
             this.label5 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
             this.txtFormula = new System.Windows.Forms.TextBox();
-            this.btnAddField = new System.Windows.Forms.Button();
             this.valueContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.grpConditionalFormatting = new System.Windows.Forms.GroupBox();
             this.lstRules = new System.Windows.Forms.ListBox();
@@ -60,7 +59,10 @@ namespace PptExcelSync
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.btnRemoveField = new System.Windows.Forms.Button();
             this.columnListBox = new System.Windows.Forms.ListBox();
+            this.btnAddField = new System.Windows.Forms.Button();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.cmbRepeatBy = new System.Windows.Forms.ComboBox();
+            this.lblRepeatBy = new System.Windows.Forms.Label();
             this.cmbYoYColumnField = new System.Windows.Forms.ComboBox();
             this.label11 = new System.Windows.Forms.Label();
             this.grpFilters = new System.Windows.Forms.GroupBox();
@@ -78,8 +80,6 @@ namespace PptExcelSync
             this.btnRemoveFile = new System.Windows.Forms.Button();
             this.lstDatasetFiles = new System.Windows.Forms.ListBox();
             this.btnAddFiles = new System.Windows.Forms.Button();
-            this.cmbRepeatBy = new System.Windows.Forms.ComboBox();
-            this.lblRepeatBy = new System.Windows.Forms.Label();
             this.grpConditionalFormatting.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -128,13 +128,15 @@ namespace PptExcelSync
             // 
             // btnGenerate
             // 
+            this.btnGenerate.BackColor = System.Drawing.Color.SlateBlue;
+            this.btnGenerate.ForeColor = System.Drawing.SystemColors.ButtonHighlight;
             this.btnGenerate.Location = new System.Drawing.Point(144, 337);
             this.btnGenerate.Margin = new System.Windows.Forms.Padding(4);
             this.btnGenerate.Name = "btnGenerate";
             this.btnGenerate.Size = new System.Drawing.Size(100, 28);
             this.btnGenerate.TabIndex = 6;
-            this.btnGenerate.Text = "Generate";
-            this.btnGenerate.UseVisualStyleBackColor = true;
+            this.btnGenerate.Text = "Generate ▶";
+            this.btnGenerate.UseVisualStyleBackColor = false;
             this.btnGenerate.Click += new System.EventHandler(this.btnGenerate_Click);
             // 
             // clbValueFields
@@ -219,17 +221,6 @@ namespace PptExcelSync
             this.txtFormula.Size = new System.Drawing.Size(173, 22);
             this.txtFormula.TabIndex = 15;
             // 
-            // btnAddField
-            // 
-            this.btnAddField.Location = new System.Drawing.Point(272, 92);
-            this.btnAddField.Margin = new System.Windows.Forms.Padding(4);
-            this.btnAddField.Name = "btnAddField";
-            this.btnAddField.Size = new System.Drawing.Size(100, 28);
-            this.btnAddField.TabIndex = 16;
-            this.btnAddField.Text = "Add Column";
-            this.btnAddField.UseVisualStyleBackColor = true;
-            this.btnAddField.Click += new System.EventHandler(this.btnAddField_Click_1);
-            // 
             // valueContextMenu
             // 
             this.valueContextMenu.ImageScalingSize = new System.Drawing.Size(20, 20);
@@ -254,7 +245,7 @@ namespace PptExcelSync
             this.grpConditionalFormatting.Size = new System.Drawing.Size(413, 204);
             this.grpConditionalFormatting.TabIndex = 17;
             this.grpConditionalFormatting.TabStop = false;
-            this.grpConditionalFormatting.Text = "Conditional Formatting";
+            this.grpConditionalFormatting.Text = "Conditional Formatting 🎨 ";
             // 
             // lstRules
             // 
@@ -273,7 +264,7 @@ namespace PptExcelSync
             this.btnDeleteRule.Name = "btnDeleteRule";
             this.btnDeleteRule.Size = new System.Drawing.Size(100, 28);
             this.btnDeleteRule.TabIndex = 7;
-            this.btnDeleteRule.Text = "Delete Rule";
+            this.btnDeleteRule.Text = "❌ Remove Rule";
             this.btnDeleteRule.UseVisualStyleBackColor = true;
             this.btnDeleteRule.Click += new System.EventHandler(this.btnDeleteRule_Click);
             // 
@@ -284,7 +275,7 @@ namespace PptExcelSync
             this.btnAddRule.Name = "btnAddRule";
             this.btnAddRule.Size = new System.Drawing.Size(100, 28);
             this.btnAddRule.TabIndex = 6;
-            this.btnAddRule.Text = "Add Rule";
+            this.btnAddRule.Text = "➕ Add Rule";
             this.btnAddRule.UseVisualStyleBackColor = true;
             this.btnAddRule.Click += new System.EventHandler(this.btnAddRule_Click);
             // 
@@ -367,16 +358,16 @@ namespace PptExcelSync
             this.groupBox1.Size = new System.Drawing.Size(413, 167);
             this.groupBox1.TabIndex = 18;
             this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Calculate Formula";
+            this.groupBox1.Text = "Calculate Formula 📐";
             // 
             // btnRemoveField
             // 
             this.btnRemoveField.Location = new System.Drawing.Point(272, 128);
             this.btnRemoveField.Margin = new System.Windows.Forms.Padding(4);
             this.btnRemoveField.Name = "btnRemoveField";
-            this.btnRemoveField.Size = new System.Drawing.Size(100, 28);
+            this.btnRemoveField.Size = new System.Drawing.Size(121, 28);
             this.btnRemoveField.TabIndex = 18;
-            this.btnRemoveField.Text = "Remove";
+            this.btnRemoveField.Text = "❌ Remove";
             this.btnRemoveField.UseVisualStyleBackColor = true;
             this.btnRemoveField.Click += new System.EventHandler(this.btnRemoveField_Click);
             // 
@@ -389,6 +380,17 @@ namespace PptExcelSync
             this.columnListBox.Name = "columnListBox";
             this.columnListBox.Size = new System.Drawing.Size(245, 68);
             this.columnListBox.TabIndex = 17;
+            // 
+            // btnAddField
+            // 
+            this.btnAddField.Location = new System.Drawing.Point(272, 92);
+            this.btnAddField.Margin = new System.Windows.Forms.Padding(4);
+            this.btnAddField.Name = "btnAddField";
+            this.btnAddField.Size = new System.Drawing.Size(121, 28);
+            this.btnAddField.TabIndex = 16;
+            this.btnAddField.Text = "➕ Add Column";
+            this.btnAddField.UseVisualStyleBackColor = true;
+            this.btnAddField.Click += new System.EventHandler(this.btnAddField_Click_1);
             // 
             // groupBox2
             // 
@@ -412,7 +414,24 @@ namespace PptExcelSync
             this.groupBox2.Size = new System.Drawing.Size(405, 379);
             this.groupBox2.TabIndex = 19;
             this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Generate Chart/Table";
+            this.groupBox2.Text = "Generate Chart/Table 📊";
+            // 
+            // cmbRepeatBy
+            // 
+            this.cmbRepeatBy.FormattingEnabled = true;
+            this.cmbRepeatBy.Location = new System.Drawing.Point(129, 126);
+            this.cmbRepeatBy.Name = "cmbRepeatBy";
+            this.cmbRepeatBy.Size = new System.Drawing.Size(160, 24);
+            this.cmbRepeatBy.TabIndex = 0;
+            // 
+            // lblRepeatBy
+            // 
+            this.lblRepeatBy.AutoSize = true;
+            this.lblRepeatBy.Location = new System.Drawing.Point(8, 132);
+            this.lblRepeatBy.Name = "lblRepeatBy";
+            this.lblRepeatBy.Size = new System.Drawing.Size(71, 16);
+            this.lblRepeatBy.TabIndex = 1;
+            this.lblRepeatBy.Text = "Repeat By";
             // 
             // cmbYoYColumnField
             // 
@@ -448,7 +467,7 @@ namespace PptExcelSync
             this.grpFilters.Size = new System.Drawing.Size(411, 156);
             this.grpFilters.TabIndex = 20;
             this.grpFilters.TabStop = false;
-            this.grpFilters.Text = "Filters";
+            this.grpFilters.Text = "Filters 🔎";
             // 
             // btnRemoveFilter
             // 
@@ -457,7 +476,7 @@ namespace PptExcelSync
             this.btnRemoveFilter.Name = "btnRemoveFilter";
             this.btnRemoveFilter.Size = new System.Drawing.Size(100, 28);
             this.btnRemoveFilter.TabIndex = 6;
-            this.btnRemoveFilter.Text = "Remove";
+            this.btnRemoveFilter.Text = "❌ Remove";
             this.btnRemoveFilter.UseVisualStyleBackColor = true;
             this.btnRemoveFilter.Click += new System.EventHandler(this.btnRemoveFilter_Click);
             // 
@@ -468,7 +487,7 @@ namespace PptExcelSync
             this.btnAddFilter.Name = "btnAddFilter";
             this.btnAddFilter.Size = new System.Drawing.Size(100, 28);
             this.btnAddFilter.TabIndex = 5;
-            this.btnAddFilter.Text = "Add Filter";
+            this.btnAddFilter.Text = "➕ Add Filter";
             this.btnAddFilter.UseVisualStyleBackColor = true;
             this.btnAddFilter.Click += new System.EventHandler(this.btnAddFilter_Click);
             // 
@@ -536,7 +555,7 @@ namespace PptExcelSync
             this.groupBox3.Size = new System.Drawing.Size(405, 167);
             this.groupBox3.TabIndex = 21;
             this.groupBox3.TabStop = false;
-            this.groupBox3.Text = "YoY Comparison";
+            this.groupBox3.Text = "YoY Comparison ⏳";
             // 
             // label10
             // 
@@ -575,7 +594,7 @@ namespace PptExcelSync
             this.btnRemoveFile.Name = "btnRemoveFile";
             this.btnRemoveFile.Size = new System.Drawing.Size(100, 28);
             this.btnRemoveFile.TabIndex = 3;
-            this.btnRemoveFile.Text = "Remove";
+            this.btnRemoveFile.Text = "❌  Remove";
             this.btnRemoveFile.UseVisualStyleBackColor = true;
             this.btnRemoveFile.Click += new System.EventHandler(this.btnRemoveFile_Click);
             // 
@@ -596,31 +615,15 @@ namespace PptExcelSync
             this.btnAddFiles.Name = "btnAddFiles";
             this.btnAddFiles.Size = new System.Drawing.Size(100, 28);
             this.btnAddFiles.TabIndex = 1;
-            this.btnAddFiles.Text = "Add File";
+            this.btnAddFiles.Text = "➕ Add File";
             this.btnAddFiles.UseVisualStyleBackColor = true;
             this.btnAddFiles.Click += new System.EventHandler(this.btnAddFiles_Click);
-            // 
-            // cmbRepeatBy
-            // 
-            this.cmbRepeatBy.FormattingEnabled = true;
-            this.cmbRepeatBy.Location = new System.Drawing.Point(129, 126);
-            this.cmbRepeatBy.Name = "cmbRepeatBy";
-            this.cmbRepeatBy.Size = new System.Drawing.Size(160, 24);
-            this.cmbRepeatBy.TabIndex = 0;
-            // 
-            // lblRepeatBy
-            // 
-            this.lblRepeatBy.AutoSize = true;
-            this.lblRepeatBy.Location = new System.Drawing.Point(8, 132);
-            this.lblRepeatBy.Name = "lblRepeatBy";
-            this.lblRepeatBy.Size = new System.Drawing.Size(71, 16);
-            this.lblRepeatBy.TabIndex = 1;
-            this.lblRepeatBy.Text = "Repeat By";
             // 
             // Pivot
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(248)))), ((int)(((byte)(248)))));
             this.ClientSize = new System.Drawing.Size(879, 587);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.grpFilters);
